@@ -145,9 +145,14 @@ for rol_id, codigos in asignaciones.items():
     valores = ", ".join(f"({rol_id}, {indices_permiso[c]})" for c in codigos)
     partes.append(f"INSERT INTO rol_permisos (rol_id, permiso_id) VALUES {valores};")
 
+# Nota: cada ejecución genera hashes distintos, porque bcrypt usa una sal
+# aleatoria. Eso hace que el archivo cambie aunque el esquema sea idéntico;
+# es el comportamiento correcto del algoritmo, no un error del generador.
 partes.append("""
 -- ── Usuarios de prueba ─────────────────────────────────────────────────
 -- Las contraseñas se almacenan EXCLUSIVAMENTE como hash bcrypt.
+-- Cada hash lleva su propia sal, así que regenerar este archivo produce
+-- valores distintos para las mismas contraseñas. Es lo esperado.
 -- Credenciales en claro (solo para pruebas):""")
 for *_, email, password, rol in USUARIOS:
     partes.append(f"--   {rol:15} {email:28} {password}")

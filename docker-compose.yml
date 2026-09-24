@@ -1,0 +1,40 @@
+# Levanta PostgreSQL y el backend con un solo comando:
+#
+#     docker compose up --build
+#
+# El frontend se sigue ejecutando aparte con `npm run dev`, para conservar la
+# recarga en caliente de Vite durante el desarrollo.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: oleo
+      POSTGRES_PASSWORD: oleo
+      POSTGRES_DB: oleo_lienzo
+    ports:
+      - "5432:5432"
+    volumes:
+      - datos_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U oleo -d oleo_lienzo"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://oleo:oleo@db:5432/oleo_lienzo
+      JWT_SECRET_KEY: clave-solo-para-desarrollo-local-cambiala-en-produccion
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      FRONTEND_URL: http://localhost:5173
+    ports:
+      - "8000:8000"
+    command: sh -c "python seed.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"
+
+volumes:
+  datos_postgres:

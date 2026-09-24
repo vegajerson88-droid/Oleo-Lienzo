@@ -1,0 +1,2657 @@
+{
+  "info": {
+    "name": "Óleo & Lienzo — API (React + Vite + FastAPI)",
+    "description": "Colección de pruebas de la API de Óleo & Lienzo.\n\n## Cómo usarla\n\n1. Arranca el backend: `uvicorn app.main:app --reload`.\n2. Ajusta la variable `base_url` si no usas el puerto 8000.\n3. Ejecuta **POST /api/auth/login** con las credenciales de prueba. El token se guarda solo en la variable `token` y el resto de peticiones lo usan automáticamente.\n\n## Credenciales de prueba (las crea `python seed.py`)\n\n| Rol | Correo | Contraseña |\n|---|---|---|\n| Administrador | admin@oleoylienzo.com | Admin1234 |\n| Empleado | empleado@oleoylienzo.com | Empleado123 |\n| Cliente | cliente@oleoylienzo.com | Cliente123 |\n\n## Para evidenciar el control de roles\n\nInicia sesión como **cliente** y lanza `GET /api/usuarios`: debe responder **403**. Sin token, **401**.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Autenticación",
+      "item": [
+        {
+          "name": "POST Registrar un cliente nuevo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/registro",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "registro"
+              ]
+            },
+            "description": "Da de alta un cliente desde el formulario público del sitio.\n\nEl backend **revalida** todos los campos aunque React ya los haya validado, comprueba que el correo y el documento no estén repetidos, convierte la contraseña en un hash bcrypt y envía el correo de bienvenida en segundo plano (`BackgroundTasks`), sin hacer esperar la respuesta.\n\nLa contraseña original nunca se almacena.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"apellido\": \"Pérez\",\n  \"confirmar_password\": \"Cliente123\",\n  \"direccion\": \"Calle 45 # 12-30\",\n  \"email\": \"sara.perez@ejemplo.com\",\n  \"nombre\": \"Sara\",\n  \"numero_documento\": \"1098765432\",\n  \"password\": \"Cliente123\",\n  \"telefono\": \"3009876543\",\n  \"tipo_documento\": \"CC\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Iniciar sesión y obtener el JWT",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/login",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "Valida las credenciales y devuelve un JSON Web Token firmado junto con los datos del usuario.\n\nEl token se envía en las peticiones protegidas como `Authorization: Bearer <token>`.\n\nLimitado por IP para frenar ataques de fuerza bruta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@oleoylienzo.com\",\n  \"password\": \"Admin1234\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Guarda el token para el resto de la colección.",
+                  "if (pm.response.code === 200) {",
+                  "  const datos = pm.response.json();",
+                  "  pm.collectionVariables.set('token', datos.access_token);",
+                  "  console.log('Token guardado para', datos.usuario.email);",
+                  "}",
+                  "pm.test('Devuelve 200 y un JWT', function () {",
+                  "  pm.response.to.have.status(200);",
+                  "  pm.expect(pm.response.json()).to.have.property('access_token');",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST Inicio de sesión compatible con OAuth2 (botón Authorize de Swagger)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "token"
+              ]
+            },
+            "description": "Variante del login que acepta `application/x-www-form-urlencoded`, como exige el flujo *OAuth2 password*. Sirve para autenticarse desde el botón **Authorize** de esta misma documentación.\n\nUsa el correo en el campo `username`. El frontend usa `/auth/login`.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Datos del usuario autenticado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/auth/me",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Devuelve el perfil asociado al token, con su rol y permisos. React la usa al cargar para restaurar la sesión y decidir qué panel mostrar.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Solicitar el enlace de recuperación de contraseña",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/recuperar-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "recuperar-password"
+              ]
+            },
+            "description": "Envía por correo un enlace con un token temporal.\n\nResponde siempre lo mismo exista o no la cuenta: de lo contrario, este endpoint permitiría averiguar qué correos están registrados.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sara.perez@ejemplo.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Fijar una contraseña nueva con el token del correo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/restablecer-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "restablecer-password"
+              ]
+            },
+            "description": "Comprueba la firma y la vigencia del token de recuperación y guarda el hash de la contraseña nueva. El token caduca a los 30 minutos y no sirve para autenticarse en el resto de la API.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"\",\n  \"password\": \"\",\n  \"confirmar_password\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Cambiar la contraseña con la sesión iniciada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/cambiar-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "cambiar-password"
+              ]
+            },
+            "description": "Pide la contraseña actual antes de aceptar la nueva.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"password_actual\": \"\",\n  \"password_nueva\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Chatbot IA",
+      "item": [
+        {
+          "name": "POST Conversar con el asistente",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/chatbot/mensaje",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "chatbot",
+                "mensaje"
+              ]
+            },
+            "description": "Envía un mensaje al chatbot y devuelve su respuesta.\n\n**Cómo funciona.** El backend arma el contexto con el catálogo real de obras y servicios de la base de datos y los últimos mensajes de la conversación, y se lo pasa al modelo de **Groq**. La clave de API se lee de `GROQ_API_KEY` y nunca llega al navegador.\n\n**Qué resuelve.** Preguntas frecuentes, orientación sobre obras y servicios, guía del proceso de compra y radicación de PQR.\n\n**Si la IA no está disponible** (sin clave, tiempo agotado o error del proveedor), responde un modo local basado en reglas y lo declara en `generado_por_ia: false` junto con el motivo en `detalle`. Nunca finge que contestó la IA.\n\nNo requiere iniciar sesión; si hay sesión, la conversación queda asociada al usuario.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mensaje\": \"¿Qué obras de Marina Solórzano tienen disponibles?\",\n  \"session_id\": \"4f9a1c2e-7b3d-4a56-9e01-2c8d5f6a7b90\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Listar conversaciones (auditoría)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/chatbot/conversaciones",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "chatbot",
+                "conversaciones"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Permite al administrador revisar qué se le ha preguntado al asistente y qué respondió.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Consultar una conversación completa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/chatbot/conversaciones/:conversacion_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "chatbot",
+                "conversaciones",
+                ":conversacion_id"
+              ],
+              "variable": [
+                {
+                  "key": "conversacion_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Consultar una conversación completa",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "item": [
+        {
+          "name": "GET Dashboard del usuario autenticado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/dashboard",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ],
+              "query": [
+                {
+                  "key": "fecha_inicio",
+                  "value": "",
+                  "description": "Inicio del periodo.",
+                  "disabled": true
+                },
+                {
+                  "key": "fecha_fin",
+                  "value": "",
+                  "description": "Fin del periodo.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Devuelve los indicadores y gráficos que corresponden al **rol de quien consulta**, sin que el frontend tenga que pedir uno concreto:\n\n- **Administrador**: usuarios, obras, servicios, ventas, facturación y PQR, con la evolución diaria de ventas, el reparto por estado, los productos más vendidos y el estado de las PQR.\n- **Empleado**: solo lo operativo (catálogo, ventas, pedidos y PQR pendientes). No ve usuarios ni ingresos globales.\n- **Cliente**: únicamente su propia actividad: pedidos, compras, total invertido, facturas y PQR abiertas.\n\nAcepta `fecha_inicio` y `fecha_fin` para acotar el periodo.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Facturación",
+      "item": [
+        {
+          "name": "GET Consultar facturas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "facturas"
+              ],
+              "query": [
+                {
+                  "key": "numero",
+                  "value": "",
+                  "description": "Número de factura.",
+                  "disabled": true
+                },
+                {
+                  "key": "cliente_id",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "estado",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "fecha_inicio",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "fecha_fin",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "buscar",
+                  "value": "",
+                  "description": "Texto libre de búsqueda. Mínimo 2 caracteres.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Busca facturas por número, cliente, estado o rango de fechas de emisión. El parámetro `buscar` cubre a la vez número, nombre y documento del cliente.\n\nUn **cliente** solo ve sus propias facturas.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Emitir una factura a partir de una venta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/facturas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "facturas"
+              ]
+            },
+            "description": "Crea la factura de una venta existente con un consecutivo `OL-NNNNNN`.\n\nLa factura **congela** los datos del cliente y los importes en el momento de emitirse: si después cambia el perfil del cliente o el catálogo, el documento no se altera.\n\nUna venta solo puede facturarse una vez (409) y una venta anulada no puede facturarse (422).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"venta_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Consultar una factura",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/facturas/:factura_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "facturas",
+                ":factura_id"
+              ],
+              "variable": [
+                {
+                  "key": "factura_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Consultar una factura",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Descargar la factura en PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/facturas/:factura_id/pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "facturas",
+                ":factura_id",
+                "pdf"
+              ],
+              "variable": [
+                {
+                  "key": "factura_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Genera el PDF **en el servidor** y lo devuelve como descarga.\n\nIncluye logotipo, razón social, NIT, datos del cliente, número y fecha, líneas con cantidades y precios, subtotal, descuento, IVA desglosado, total, método de pago, estado y pie de página.\n\nEl cliente solo puede descargar sus propias facturas.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Cambiar el estado de una factura",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/facturas/:factura_id/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "facturas",
+                ":factura_id",
+                "estado"
+              ],
+              "variable": [
+                {
+                  "key": "factura_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Transiciones permitidas:\n\n```\nemitida → pagada | anulada\npagada  → anulada\nanulada → (final)\n```",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevo_estado\": \"pagada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Inteligencia Artificial",
+      "item": [
+        {
+          "name": "GET Sugerir un precio con el modelo propio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ia/precio-sugerido",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "precio-sugerido"
+              ],
+              "query": [
+                {
+                  "key": "anio",
+                  "value": "",
+                  "description": "Año de creación de la obra.",
+                  "disabled": false
+                },
+                {
+                  "key": "tecnica",
+                  "value": "",
+                  "description": "Técnica empleada.",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Estima el precio de una obra con un modelo de **regresión lineal entrenado con el propio catálogo** (scikit-learn), a partir del año y de si la técnica es óleo.\n\nEl modelo se entrena con `seed.py` y se carga **una sola vez** en el arranque de la aplicación (`app.state`), no en cada petición.\n\nSi todavía no se ha entrenado, responde `disponible: false` con el motivo en lugar de devolver un número inventado.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Redactar una descripción con IA externa",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ia/descripcion-sugerida",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ia",
+                "descripcion-sugerida"
+              ],
+              "query": [
+                {
+                  "key": "titulo",
+                  "value": "",
+                  "description": "Título de la obra.",
+                  "disabled": false
+                },
+                {
+                  "key": "tecnica",
+                  "value": "",
+                  "description": "Técnica empleada.",
+                  "disabled": false
+                }
+              ]
+            },
+            "description": "Pide a **Groq** una frase de catálogo para una obra. La clave vive en `GROQ_API_KEY` y no sale del servidor.\n\nReintenta una vez ante fallos de red y, si aun así no hay respuesta, devuelve `disponible: false` con el motivo: no inventa un texto haciéndolo pasar por generado.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Obras / Productos",
+      "item": [
+        {
+          "name": "GET Listar obras del catálogo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "productos"
+              ],
+              "query": [
+                {
+                  "key": "artista",
+                  "value": "",
+                  "description": "Coincidencia parcial.",
+                  "disabled": true
+                },
+                {
+                  "key": "tecnica",
+                  "value": "",
+                  "description": "Coincidencia parcial.",
+                  "disabled": true
+                },
+                {
+                  "key": "disponible",
+                  "value": "",
+                  "description": "Solo obras disponibles.",
+                  "disabled": true
+                },
+                {
+                  "key": "precio_min",
+                  "value": "",
+                  "description": "Precio mínimo en COP.",
+                  "disabled": true
+                },
+                {
+                  "key": "precio_max",
+                  "value": "",
+                  "description": "Precio máximo en COP.",
+                  "disabled": true
+                },
+                {
+                  "key": "buscar",
+                  "value": "",
+                  "description": "Texto libre de búsqueda. Mínimo 2 caracteres.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Endpoint **público**: alimenta la galería del sitio sin necesidad de iniciar sesión.\n\nAdmite filtrar por artista, técnica, disponibilidad y rango de precio, buscar por texto en el título o la descripción, y paginar.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Crear una obra",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/productos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "productos"
+              ]
+            },
+            "description": "Requiere rol administrador o empleado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"anio\": 2021,\n  \"artista\": \"Marina Solórzano\",\n  \"descripcion\": \"Pinceladas cálidas que capturan la luz del primer sol.\",\n  \"disponible\": true,\n  \"precio\": 1250000,\n  \"stock\": 1,\n  \"tecnica\": \"Óleo sobre lienzo\",\n  \"titulo\": \"Amanecer en el Valle\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Consultar una obra",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/productos/:obra_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "productos",
+                ":obra_id"
+              ],
+              "variable": [
+                {
+                  "key": "obra_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Endpoint público con la ficha técnica completa de una obra.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Reemplazar una obra (actualización completa)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/productos/:obra_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "productos",
+                ":obra_id"
+              ],
+              "variable": [
+                {
+                  "key": "obra_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "**PUT**: sustituye el recurso entero. Todos los campos son obligatorios; lo que se omita se rechaza con un 422.\n\nPara modificar un solo campo, usa `PATCH`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"\",\n  \"artista\": \"\",\n  \"anio\": 1,\n  \"tecnica\": \"\",\n  \"precio\": 1000,\n  \"descripcion\": \"\",\n  \"imagen_url\": \"\",\n  \"disponible\": true,\n  \"stock\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Actualizar una obra (parcialmente)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/productos/:obra_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "productos",
+                ":obra_id"
+              ],
+              "variable": [
+                {
+                  "key": "obra_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "**PATCH**: modifica solo los campos enviados en el cuerpo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"titulo\": \"\",\n  \"artista\": \"\",\n  \"anio\": \"\",\n  \"tecnica\": \"\",\n  \"precio\": \"\",\n  \"descripcion\": \"\",\n  \"imagen_url\": \"\",\n  \"disponible\": \"\",\n  \"stock\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Eliminar una obra",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/productos/:obra_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "productos",
+                ":obra_id"
+              ],
+              "variable": [
+                {
+                  "key": "obra_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Solo el administrador. Devuelve 409 si la obra ya aparece en algún pedido o venta: en ese caso hay que marcarla como no disponible.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "PQR",
+      "item": [
+        {
+          "name": "POST Radicar una PQR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pqr",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pqr"
+              ]
+            },
+            "description": "Radica una petición, queja, reclamo o sugerencia y devuelve un **número de radicado** (`PQR-NNNNNN`) para hacer seguimiento.\n\nFunciona con y sin sesión iniciada: con sesión toma los datos del usuario; sin ella hay que enviar `contacto_nombre` y `contacto_email` (es la vía que usa el chatbot con visitantes).\n\nEl acuse de recibo se envía por correo en segundo plano.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asunto\": \"La obra llegó con el marco dañado\",\n  \"contacto_email\": \"sara.perez@ejemplo.com\",\n  \"contacto_nombre\": \"Sara Pérez\",\n  \"mensaje\": \"Recibí el pedido #12 y el marco venía roto en una esquina.\",\n  \"tipo\": \"reclamo\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Listar PQR",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pqr",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pqr"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "tipo",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "buscar",
+                  "value": "",
+                  "description": "Texto libre de búsqueda. Mínimo 2 caracteres.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Un **cliente** solo ve las PQR que él radicó; administrador y empleado las ven todas. Admite filtrar por estado y tipo, y buscar por radicado, asunto o correo.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Consultar una PQR",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pqr/:pqr_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pqr",
+                ":pqr_id"
+              ],
+              "variable": [
+                {
+                  "key": "pqr_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Consultar una PQR",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Responder una PQR",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pqr/:pqr_id/responder",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pqr",
+                ":pqr_id",
+                "responder"
+              ],
+              "variable": [
+                {
+                  "key": "pqr_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Guarda la respuesta, registra quién y cuándo respondió, y pasa la PQR a estado `respondida`. Notifica al cliente por correo en segundo plano. Una PQR cerrada no se puede responder (422).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"respuesta\": \"Lamentamos el inconveniente. Programamos la recogida y el reemplazo del marco sin costo.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Cambiar el estado de una PQR",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pqr/:pqr_id/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pqr",
+                ":pqr_id",
+                "estado"
+              ],
+              "variable": [
+                {
+                  "key": "pqr_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Transiciones permitidas:\n\n```\npendiente  → en_proceso | respondida | cerrada\nen_proceso → respondida | cerrada\nrespondida → cerrada    | en_proceso   (si el cliente no queda conforme)\ncerrada    → (final)\n```\n\nNo se puede marcar como `respondida` una PQR que todavía no tiene respuesta escrita.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevo_estado\": \"en_proceso\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pagos (Stripe)",
+      "item": [
+        {
+          "name": "POST Crear la sesión de pago de una venta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pagos/checkout",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "checkout"
+              ]
+            },
+            "description": "Crea una sesión de **Stripe Checkout** y devuelve la URL donde el cliente introduce los datos de su tarjeta.\n\n**Seguridad.** Los datos de tarjeta se escriben en una página alojada por Stripe, nunca en nuestro frontend ni en nuestro servidor. De la transacción solo guardamos identificadores y estado: ningún número de tarjeta, CVV ni fecha de expiración llega a nuestra base de datos.\n\nEl importe se construye a partir de la venta guardada (líneas, descuento e IVA), no de lo que envíe el navegador.\n\nDevuelve 422 si Stripe no está configurado o la venta no se puede cobrar.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"venta_id\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Webhook de Stripe",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pagos/webhook",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "webhook"
+              ]
+            },
+            "description": "Recibe los eventos de Stripe y actualiza el estado de la venta y del pago.\n\n**No lleva autenticación JWT a propósito**: quien llama es Stripe, no un usuario. La autenticidad se comprueba verificando la **firma criptográfica** de la cabecera `Stripe-Signature` contra `STRIPE_WEBHOOK_SECRET`. Sin esa verificación, cualquiera podría fingir que un pago se completó.\n\nLa operación es **idempotente**: Stripe reintenta los eventos y volver a procesar el mismo no altera nada.\n\nEventos atendidos: `checkout.session.completed`, `checkout.session.expired` y `charge.refunded`.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Clave pública de Stripe",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pagos/configuracion",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pagos",
+                "configuracion"
+              ]
+            },
+            "description": "Devuelve la clave **publicable** para que el frontend pueda inicializar Stripe. Es la única clave pensada para exponerse; la secreta nunca sale del servidor.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pedidos",
+      "item": [
+        {
+          "name": "GET Listar pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pedidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pedidos"
+              ],
+              "query": [
+                {
+                  "key": "estado",
+                  "value": "",
+                  "description": "Filtra por estado.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "El alcance depende del rol: un **cliente** solo ve sus propios pedidos; **administrador** y **empleado** los ven todos. El filtro lo impone el backend, no el frontend.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Crear un pedido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pedidos",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pedidos"
+              ]
+            },
+            "description": "Solo el rol **cliente**. Cada línea puede ser una obra o un servicio.\n\nEl backend valida la disponibilidad y el stock, calcula el total con los precios vigentes en la base de datos (nunca con los que envíe el cliente) y **reserva el inventario**. Si alguna línea falla, no se reserva nada.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"detalles\": [\n    {\n      \"cantidad\": 1,\n      \"obra_id\": 1\n    },\n    {\n      \"cantidad\": 1,\n      \"servicio_id\": 1\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Consultar un pedido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/pedidos/:pedido_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pedidos",
+                ":pedido_id"
+              ],
+              "variable": [
+                {
+                  "key": "pedido_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Un cliente que pida un pedido ajeno recibe un 403.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Cambiar el estado de un pedido",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pedidos/:pedido_id/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pedidos",
+                ":pedido_id",
+                "estado"
+              ],
+              "variable": [
+                {
+                  "key": "pedido_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Operación de negocio, no un CRUD: la transición se valida contra una máquina de estados.\n\n```\npendiente  → confirmado | cancelado\nconfirmado → entregado  | cancelado\nentregado  → (final)\ncancelado  → (final)\n```\n\n**Confirmar genera automáticamente la venta** correspondiente. **Cancelar devuelve el inventario** reservado. Cualquier otra transición se rechaza con 422.\n\nEl aviso por correo al cliente se envía en segundo plano.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevo_estado\": \"confirmado\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "GET Reporte diario de ventas (JSON)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/reportes/ventas-diarias",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "ventas-diarias"
+              ],
+              "query": [
+                {
+                  "key": "dia",
+                  "value": "",
+                  "description": "Fecha del reporte en formato AAAA-MM-DD. Por defecto, hoy.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Devuelve las ventas de una fecha con su detalle y los totales consolidados. Es la misma información que alimenta las versiones en PDF y Excel, para que el frontend pueda mostrarla antes de exportar.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Reporte diario de ventas en PDF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/reportes/ventas-diarias/pdf",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "ventas-diarias",
+                "pdf"
+              ],
+              "query": [
+                {
+                  "key": "dia",
+                  "value": "",
+                  "description": "Fecha del reporte en formato AAAA-MM-DD. Por defecto, hoy.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Genera el reporte en PDF (horizontal) con la cabecera corporativa, cuatro tarjetas de resumen —ventas, unidades, IVA recaudado y total—, la tabla de ventas del día con estado en color y el total general.\n\nSe construye en el servidor con ReportLab y se entrega como descarga.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Reporte diario de ventas en Excel (.xlsx)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/reportes/ventas-diarias/excel",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "reportes",
+                "ventas-diarias",
+                "excel"
+              ],
+              "query": [
+                {
+                  "key": "dia",
+                  "value": "",
+                  "description": "Fecha del reporte en formato AAAA-MM-DD. Por defecto, hoy.",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Exporta el mismo reporte a Excel con una columna por dato, importes como números reales (no texto), fila de totales con fórmulas `SUM`, autofiltro, paneles congelados y una segunda hoja de resumen por estado. Queda listo para filtrar o hacer tablas dinámicas.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Servicios",
+      "item": [
+        {
+          "name": "GET Listar servicios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/servicios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ],
+              "query": [
+                {
+                  "key": "activo",
+                  "value": "",
+                  "description": "Solo servicios activos.",
+                  "disabled": true
+                },
+                {
+                  "key": "buscar",
+                  "value": "",
+                  "description": "Texto libre de búsqueda. Mínimo 2 caracteres.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Endpoint público. Filtra por estado y busca por nombre.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Crear un servicio",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/servicios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "servicios"
+              ]
+            },
+            "description": "El nombre del servicio es único: se rechaza con 409 si ya existe.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activo\": true,\n  \"descripcion\": \"Enmarcado a medida para obras adquiridas en la galería.\",\n  \"nombre\": \"Enmarcado personalizado\",\n  \"precio\": 150000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Consultar un servicio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/servicios/:servicio_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "servicios",
+                ":servicio_id"
+              ],
+              "variable": [
+                {
+                  "key": "servicio_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Consultar un servicio",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Reemplazar un servicio (actualización completa)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/servicios/:servicio_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "servicios",
+                ":servicio_id"
+              ],
+              "variable": [
+                {
+                  "key": "servicio_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "**PUT**: exige el recurso completo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": 1000,\n  \"activo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Actualizar un servicio (parcialmente)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/servicios/:servicio_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "servicios",
+                ":servicio_id"
+              ],
+              "variable": [
+                {
+                  "key": "servicio_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "**PATCH**: modifica solo los campos enviados.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"descripcion\": \"\",\n  \"precio\": \"\",\n  \"activo\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Eliminar un servicio",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/servicios/:servicio_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "servicios",
+                ":servicio_id"
+              ],
+              "variable": [
+                {
+                  "key": "servicio_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Solo el administrador. Devuelve 409 si el servicio ya se vendió.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sistema",
+      "item": [
+        {
+          "name": "GET Comprobación rápida de vida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sistema/salud",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sistema",
+                "salud"
+              ]
+            },
+            "description": "Endpoint público y ligero para balanceadores y plataformas de despliegue. No consulta servicios externos.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Diagnóstico completo de dependencias",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/sistema/diagnostico",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "sistema",
+                "diagnostico"
+              ]
+            },
+            "description": "Comprueba **de verdad** cada dependencia, una por una, y no se limita a devolver `ok`:\n\n- **Base de datos**: ejecuta una consulta real y reporta el motor.\n- **IA local**: comprueba si el modelo está cargado en memoria.\n- **IA externa (Groq)**: hace una llamada real a la API.\n- **Stripe**: consulta el balance para validar las credenciales.\n- **Correo SMTP**: abre la conexión y autentica.\n\nCada componente reporta estado, latencia en milisegundos y un detalle. El fallo de uno **no tumba** la comprobación de los demás.\n\nEl estado general es `degradado` si algún componente está en `error`; `no_configurado` no cuenta como fallo, porque las integraciones opcionales pueden estar apagadas a propósito.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Información de la API",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": []
+            },
+            "description": "Información de la API",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "GET Listar usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ],
+              "query": [
+                {
+                  "key": "rol",
+                  "value": "",
+                  "description": "administrador, empleado o cliente.",
+                  "disabled": true
+                },
+                {
+                  "key": "activo",
+                  "value": "",
+                  "description": "Filtra por estado.",
+                  "disabled": true
+                },
+                {
+                  "key": "buscar",
+                  "value": "",
+                  "description": "Texto libre de búsqueda. Mínimo 2 caracteres.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Devuelve los usuarios paginados. Admite filtrar por rol y por estado, y buscar por nombre, apellido, correo o documento.\n\nLa respuesta nunca incluye el hash de la contraseña.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Crear un usuario desde el panel",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/usuarios",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios"
+              ]
+            },
+            "description": "Alta manual de usuarios. A diferencia del registro público, aquí el administrador elige el rol (`rol_nombre`), por ejemplo para dar de alta a un empleado.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"apellido\": \"Pérez\",\n  \"confirmar_password\": \"Cliente123\",\n  \"direccion\": \"Calle 45 # 12-30\",\n  \"email\": \"sara.perez@ejemplo.com\",\n  \"nombre\": \"Sara\",\n  \"numero_documento\": \"1098765432\",\n  \"password\": \"Cliente123\",\n  \"telefono\": \"3009876543\",\n  \"tipo_documento\": \"CC\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Listar roles y sus permisos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/roles",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                "roles"
+              ]
+            },
+            "description": "Catálogo de roles con los permisos asignados a cada uno.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Consultar un usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/:usuario_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                ":usuario_id"
+              ],
+              "variable": [
+                {
+                  "key": "usuario_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Consultar un usuario",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PUT Reemplazar un usuario (actualización completa)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/:usuario_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                ":usuario_id"
+              ],
+              "variable": [
+                {
+                  "key": "usuario_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "**PUT**: sustituye por completo los datos modificables del usuario. Hay que enviar todos los campos; omitir uno es un error de validación, no una señal de «déjalo como está».\n\nPara cambiar solo un campo, usa `PATCH`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"apellido\": \"\",\n  \"direccion\": \"\",\n  \"telefono\": \"\",\n  \"rol_id\": 1,\n  \"activo\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Actualizar un usuario (parcialmente)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/:usuario_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                ":usuario_id"
+              ],
+              "variable": [
+                {
+                  "key": "usuario_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "**PATCH**: modifica únicamente los campos incluidos en el cuerpo.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"\",\n  \"apellido\": \"\",\n  \"direccion\": \"\",\n  \"telefono\": \"\",\n  \"rol_id\": \"\",\n  \"activo\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE Eliminar un usuario",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/:usuario_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                ":usuario_id"
+              ],
+              "variable": [
+                {
+                  "key": "usuario_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Borrado físico. Falla con 409 si el usuario tiene pedidos, ventas o facturas asociadas: en ese caso hay que desactivarlo con `PATCH /usuarios/{id}/estado` para no romper el historial.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Activar o desactivar un usuario",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/usuarios/:usuario_id/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "usuarios",
+                ":usuario_id",
+                "estado"
+              ],
+              "variable": [
+                {
+                  "key": "usuario_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Cambia el estado sin borrar el registro. Es la vía recomendada frente al borrado físico: conserva el historial de pedidos, ventas y facturas del usuario.\n\nUn usuario inactivo no puede iniciar sesión (recibe un 403).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"activo\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Ventas",
+      "item": [
+        {
+          "name": "GET Historial de ventas con filtros",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ventas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ventas"
+              ],
+              "query": [
+                {
+                  "key": "fecha_inicio",
+                  "value": "",
+                  "description": "Desde esta fecha, inclusive.",
+                  "disabled": true
+                },
+                {
+                  "key": "fecha_fin",
+                  "value": "",
+                  "description": "Hasta esta fecha, inclusive.",
+                  "disabled": true
+                },
+                {
+                  "key": "cliente_id",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "obra_id",
+                  "value": "",
+                  "description": "Ventas que incluyan esta obra.",
+                  "disabled": true
+                },
+                {
+                  "key": "servicio_id",
+                  "value": "",
+                  "description": "Ventas con este servicio.",
+                  "disabled": true
+                },
+                {
+                  "key": "estado",
+                  "value": "",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "total_min",
+                  "value": "",
+                  "description": "Valor mínimo de la venta.",
+                  "disabled": true
+                },
+                {
+                  "key": "total_max",
+                  "value": "",
+                  "description": "Valor máximo de la venta.",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "",
+                  "disabled": true
+                },
+                {
+                  "key": "page_size",
+                  "value": "10",
+                  "description": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Consulta del historial comercial con todos los criterios del quinto avance: **rango de fechas, cliente, producto, servicio, estado y rango de valor**, combinables entre sí.\n\nUn **cliente** solo ve sus propias compras, aunque pida otro `cliente_id`: el backend sobrescribe ese filtro con su identidad.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "POST Registrar una venta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ventas",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ventas"
+              ]
+            },
+            "description": "Registra una venta presencial desde el panel. Requiere rol administrador o empleado.\n\nEl backend recalcula el desglose completo con los precios vigentes: subtotal por línea, descuentos, base gravable e IVA (`IVA_PORCENTAJE` del `.env`, 19 % por defecto). Descuenta el stock y asigna un consecutivo `V-AAAA-NNNNNN`.\n\nToda la aritmética usa `Decimal`, nunca coma flotante.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cliente_id\": 3,\n  \"descuento\": 50000,\n  \"detalles\": [\n    {\n      \"cantidad\": 1,\n      \"descuento\": 0,\n      \"obra_id\": 1\n    },\n    {\n      \"cantidad\": 1,\n      \"descuento\": 0,\n      \"servicio_id\": 1\n    }\n  ],\n  \"metodo_pago\": \"efectivo\",\n  \"observaciones\": \"Venta en sala, entrega inmediata.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "GET Consultar una venta",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/ventas/:venta_id",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ventas",
+                ":venta_id"
+              ],
+              "variable": [
+                {
+                  "key": "venta_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Consultar una venta",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH Cambiar el estado de una venta",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/ventas/:venta_id/estado",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "ventas",
+                ":venta_id",
+                "estado"
+              ],
+              "variable": [
+                {
+                  "key": "venta_id",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Transición validada contra la máquina de estados:\n\n```\npendiente_pago → pagada | anulada\npagada         → reembolsada\nanulada        → (final)\nreembolsada    → (final)\n```\n\nUna venta pagada **no puede anularse**: se reembolsa, que sí deja rastro contable. Anular o reembolsar **devuelve las obras al inventario**. Marcarla como pagada dispara el correo de confirmación en segundo plano.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nuevo_estado\": \"pagada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

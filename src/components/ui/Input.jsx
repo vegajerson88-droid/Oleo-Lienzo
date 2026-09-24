@@ -1,52 +1,99 @@
-import { useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
+import { useId, useState } from "react";
+import { AlertCircle, Check, Eye, EyeOff } from "lucide-react";
 
-function Input({ label, name, error, hint, type = "text", className = "", ...props }) {
-  const [showPassword, setShowPassword] = useState(false);
-  const isPassword = type === "password";
-  const resolvedType = isPassword ? (showPassword ? "text" : "password") : type;
+/**
+ * Campo de texto con etiqueta, validación visual y contador de caracteres.
+ *
+ * Muestra el error en rojo y, cuando el campo ya se tocó y es válido, una
+ * marca verde: el usuario sabe que va bien sin tener que enviar el formulario.
+ */
+function Input({
+  label,
+  name,
+  error,
+  hint,
+  valido = false,
+  type = "text",
+  className = "",
+  contador = false,
+  maxLength,
+  value,
+  ...props
+}) {
+  const [verPassword, setVerPassword] = useState(false);
+  const idGenerado = useId();
+  const id = props.id || `${name || "campo"}-${idGenerado}`;
+
+  const esPassword = type === "password";
+  const tipoReal = esPassword ? (verPassword ? "text" : "password") : type;
+  const hayError = Boolean(error);
 
   return (
-    <label className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5">
       {label && (
-        <span className="font-mono text-xs uppercase tracking-wider text-ink/80">
+        <label htmlFor={id} className="etiqueta text-ink-soft font-medium">
           {label}
-        </span>
+          {props.required && <span className="text-sienna ml-0.5">*</span>}
+        </label>
       )}
-      <span className="relative flex items-center">
+
+      <div className="relative flex items-center">
         <input
+          id={id}
           name={name}
-          type={resolvedType}
-          className={`w-full rounded-md border px-3 py-2.5 text-sm text-ink bg-white transition-colors
-            focus:outline-none focus:ring-2 focus:ring-gold/60
-            ${isPassword ? "pr-10" : ""}
-            ${error ? "border-sienna" : "border-ink/20"}
+          type={tipoReal}
+          value={value}
+          maxLength={maxLength}
+          aria-invalid={hayError || undefined}
+          aria-describedby={hayError ? `${id}-error` : hint ? `${id}-ayuda` : undefined}
+          className={`w-full rounded-lg border bg-white px-3.5 py-2.5 text-sm text-ink
+            placeholder:text-muted/60 transition-colors
+            focus:outline-none focus:ring-2 focus:ring-gold/50 focus:border-gold
+            disabled:bg-paper-dim disabled:text-muted disabled:cursor-not-allowed
+            ${esPassword || valido ? "pr-10" : ""}
+            ${hayError ? "border-error bg-error-suave/40" : "border-line"}
             ${className}`}
-          aria-invalid={!!error}
-          aria-describedby={error ? `${name}-error` : undefined}
           {...props}
         />
-        {isPassword && (
+
+        {esPassword && (
           <button
             type="button"
-            onClick={() => setShowPassword((prev) => !prev)}
-            aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
-            aria-pressed={showPassword}
+            onClick={() => setVerPassword((v) => !v)}
+            aria-label={verPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
             tabIndex={-1}
-            className="absolute right-2.5 text-ink/50 hover:text-forest transition-colors"
+            className="absolute right-3 text-muted hover:text-forest transition-colors"
           >
-            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            {verPassword ? <EyeOff size={17} /> : <Eye size={17} />}
           </button>
         )}
-      </span>
-      {error ? (
-        <span id={`${name}-error`} className="text-xs text-sienna">
-          {error}
-        </span>
-      ) : hint ? (
-        <span className="text-xs text-ink/50">{hint}</span>
-      ) : null}
-    </label>
+
+        {!esPassword && valido && !hayError && (
+          <Check size={17} className="absolute right-3 text-exito" aria-hidden="true" />
+        )}
+      </div>
+
+      <div className="flex items-start justify-between gap-3 min-h-[16px]">
+        {hayError ? (
+          <span id={`${id}-error`} role="alert" className="flex items-center gap-1 text-xs text-error">
+            <AlertCircle size={12} className="shrink-0" aria-hidden="true" />
+            {error}
+          </span>
+        ) : hint ? (
+          <span id={`${id}-ayuda`} className="text-xs text-muted">
+            {hint}
+          </span>
+        ) : (
+          <span />
+        )}
+
+        {contador && maxLength && (
+          <span className="font-mono text-[10px] text-muted shrink-0 tabular-nums">
+            {(value ?? "").length}/{maxLength}
+          </span>
+        )}
+      </div>
+    </div>
   );
 }
 

@@ -1,0 +1,45 @@
+# ── Dependencias ─────────────────────────────────────────────────────────
+node_modules/
+.pnp
+.pnp.js
+
+# ── Compilados del frontend ──────────────────────────────────────────────
+dist/
+dist-ssr/
+*.local
+.vite/
+
+# ── Variables de entorno (NUNCA subir credenciales) ──────────────────────
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# ── Python / backend ─────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+venv/
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.joblib
+
+# ── Bases de datos locales ───────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Archivos generados en tiempo de ejecución ────────────────────────────
+backend/generados/
+*.log
+logs/
+
+# ── Editores y sistema operativo ─────────────────────────────────────────
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/settings.json

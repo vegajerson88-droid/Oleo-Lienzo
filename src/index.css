@@ -1,36 +1,136 @@
-@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500&family=Work+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap");
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════════
+   Sistema de diseño de Óleo & Lienzo
+   Paleta de galería: verde bosque, oro y papel, sobre un muro cálido.
+   ═══════════════════════════════════════════════════════════════════════ */
 @theme {
+  /* ── Color ──────────────────────────────────────────────────────── */
   --color-ink: #1c1b19;
+  --color-ink-soft: #3d3b37;
+  --color-muted: #6b675f;
   --color-wall: #e8e3d5;
   --color-paper: #f7f4ec;
+  --color-paper-dim: #efeade;
+  --color-line: #d8d2c4;
+
   --color-forest: #2b3a2f;
   --color-forest-dark: #1c2620;
+  --color-forest-light: #3d5243;
+
   --color-gold: #c9a227;
+  --color-gold-soft: #e2c765;
   --color-sienna: #a64b2a;
 
-  --font-display: "Fraunces", serif;
-  --font-body: "Work Sans", sans-serif;
-  --font-mono: "Space Mono", monospace;
+  /* Estados semánticos */
+  --color-exito: #2f6b3a;
+  --color-exito-suave: #e6f0e6;
+  --color-aviso: #756017;
+  --color-aviso-suave: #faf3dd;
+  --color-error: #a64b2a;
+  --color-error-suave: #f9e9e3;
+  --color-info: #2b4a6b;
+  --color-info-suave: #e6eef5;
+
+  /* Tono de las series de los gráficos.
+     Más saturado que --color-forest a propósito: el verde de la marca es tan
+     apagado que una barra pintada con él "lee como gris". Este valor pasa las
+     comprobaciones de luminosidad, croma y contraste sobre el fondo papel. */
+  --color-grafico: #2f7d4f;
+  --color-grafico-suave: #d9ece1;
+
+  /* ── Tipografía ─────────────────────────────────────────────────── */
+  --font-display: "Fraunces", Georgia, serif;
+  --font-body: "Work Sans", system-ui, sans-serif;
+  --font-mono: "Space Mono", ui-monospace, monospace;
+
+  /* ── Sombras ────────────────────────────────────────────────────── */
+  --shadow-suave: 0 1px 3px rgb(28 27 25 / 0.06), 0 1px 2px rgb(28 27 25 / 0.04);
+  --shadow-media: 0 4px 12px rgb(28 27 25 / 0.08), 0 2px 4px rgb(28 27 25 / 0.04);
+  --shadow-alta: 0 12px 32px rgb(28 27 25 / 0.12), 0 4px 8px rgb(28 27 25 / 0.06);
+
+  /* ── Animaciones ────────────────────────────────────────────────── */
+  --animate-aparecer: aparecer 0.25s ease-out;
+  --animate-deslizar-arriba: deslizar-arriba 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-brillo: brillo 1.6s ease-in-out infinite;
 }
 
+@keyframes aparecer {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes deslizar-arriba {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes brillo {
+  0%, 100% { opacity: 1; }
+  50%      { opacity: 0.45; }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Base
+   ═══════════════════════════════════════════════════════════════════════ */
 body {
-  @apply bg-wall text-ink font-body;
+  @apply bg-wall text-ink font-body antialiased;
 }
 
-h1, h2, h3 {
-  @apply font-display font-semibold;
+h1, h2, h3, h4 {
+  @apply font-display font-semibold text-balance;
 }
 
+/* Foco visible y consistente en toda la aplicación. */
 :focus-visible {
   outline: 2px solid var(--color-gold);
   outline-offset: 3px;
+  border-radius: 4px;
 }
 
+/* Barras de desplazamiento discretas, acordes con la paleta. */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--color-muted); background-clip: content-box; }
+
+/* Respeta la preferencia del sistema de reducir el movimiento. */
 @media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   Utilidades de composición
+   ═══════════════════════════════════════════════════════════════════════ */
+@utility contenedor {
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+}
+
+@utility etiqueta {
+  @apply font-mono text-[11px] uppercase tracking-[0.12em];
+}
+
+@utility tarjeta {
+  @apply bg-paper border border-line/70 rounded-xl shadow-suave;
+}
+
+/* Quita las flechas de los campos numéricos: descolocan los formularios. */
+@utility sin-flechas {
+  &::-webkit-outer-spin-button,
+  &::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  -moz-appearance: textfield;
 }

@@ -1,4 +1,5 @@
 """Pruebas de la gestión de usuarios, roles y control de acceso."""
+
 import pytest
 
 from tests.conftest import cabecera
@@ -62,10 +63,15 @@ async def test_crear_usuario_con_rol_desde_el_panel(client, token_admin):
     resp = await client.post(
         "/api/usuarios",
         json={
-            "nombre": "Nuevo", "apellido": "Empleado", "tipo_documento": "CC",
-            "numero_documento": "77777777", "direccion": "Calle 100 # 20-30",
-            "telefono": "3007777777", "email": "nuevo.empleado@test.com",
-            "password": "Clave1234", "confirmar_password": "Clave1234",
+            "nombre": "Nuevo",
+            "apellido": "Empleado",
+            "tipo_documento": "CC",
+            "numero_documento": "77777777",
+            "direccion": "Calle 100 # 20-30",
+            "telefono": "3007777777",
+            "email": "nuevo.empleado@test.com",
+            "password": "Clave1234",
+            "confirmar_password": "Clave1234",
             "rol_nombre": "empleado",
         },
         headers=cabecera(token_admin),
@@ -77,7 +83,8 @@ async def test_crear_usuario_con_rol_desde_el_panel(client, token_admin):
 async def test_put_exige_el_recurso_completo(client, token_admin, id_cliente):
     """PUT es reemplazo: omitir campos es un 422, no un «déjalo igual»."""
     parcial = await client.put(
-        f"/api/usuarios/{id_cliente}", json={"nombre": "SoloNombre"},
+        f"/api/usuarios/{id_cliente}",
+        json={"nombre": "SoloNombre"},
         headers=cabecera(token_admin),
     )
     assert parcial.status_code == 422
@@ -85,9 +92,12 @@ async def test_put_exige_el_recurso_completo(client, token_admin, id_cliente):
     completo = await client.put(
         f"/api/usuarios/{id_cliente}",
         json={
-            "nombre": "Reemplazado", "apellido": "Completo",
-            "direccion": "Nueva Direccion 456", "telefono": "3111111111",
-            "rol_id": 3, "activo": True,
+            "nombre": "Reemplazado",
+            "apellido": "Completo",
+            "direccion": "Nueva Direccion 456",
+            "telefono": "3111111111",
+            "rol_id": 3,
+            "activo": True,
         },
         headers=cabecera(token_admin),
     )
@@ -101,7 +111,8 @@ async def test_patch_modifica_solo_lo_enviado(client, token_admin, id_cliente):
     ).json()
 
     resp = await client.patch(
-        f"/api/usuarios/{id_cliente}", json={"direccion": "Solo cambia la direccion"},
+        f"/api/usuarios/{id_cliente}",
+        json={"direccion": "Solo cambia la direccion"},
         headers=cabecera(token_admin),
     )
     assert resp.status_code == 200
@@ -119,13 +130,15 @@ async def test_patch_con_rol_inexistente_404(client, token_admin, id_cliente):
 
 async def test_cambiar_estado_activo_inactivo(client, token_admin, id_cliente):
     desactivar = await client.patch(
-        f"/api/usuarios/{id_cliente}/estado", json={"activo": False},
+        f"/api/usuarios/{id_cliente}/estado",
+        json={"activo": False},
         headers=cabecera(token_admin),
     )
     assert desactivar.status_code == 200 and desactivar.json()["activo"] is False
 
     reactivar = await client.patch(
-        f"/api/usuarios/{id_cliente}/estado", json={"activo": True},
+        f"/api/usuarios/{id_cliente}/estado",
+        json={"activo": True},
         headers=cabecera(token_admin),
     )
     assert reactivar.json()["activo"] is True
@@ -146,10 +159,15 @@ async def test_eliminar_usuario_sin_historial_204(client, token_admin):
     creado = await client.post(
         "/api/usuarios",
         json={
-            "nombre": "Temporal", "apellido": "Borrar", "tipo_documento": "CC",
-            "numero_documento": "66666666", "direccion": "Calle 1 # 2-3",
-            "telefono": "3006666666", "email": "temporal@test.com",
-            "password": "Clave1234", "confirmar_password": "Clave1234",
+            "nombre": "Temporal",
+            "apellido": "Borrar",
+            "tipo_documento": "CC",
+            "numero_documento": "66666666",
+            "direccion": "Calle 1 # 2-3",
+            "telefono": "3006666666",
+            "email": "temporal@test.com",
+            "password": "Clave1234",
+            "confirmar_password": "Clave1234",
         },
         headers=cabecera(token_admin),
     )

@@ -4,6 +4,7 @@ Un pedido confirmado genera una venta (ver `app/models/venta.py`), que a su
 vez puede facturarse. Ese encadenamiento es la columna vertebral de la lógica
 comercial del proyecto.
 """
+
 import enum
 
 from sqlalchemy import CheckConstraint, Enum, ForeignKey, Index, Numeric

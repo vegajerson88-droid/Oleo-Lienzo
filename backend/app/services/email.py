@@ -9,6 +9,7 @@ El envío es bloqueante (smtplib), así que se ejecuta en un hilo aparte para no
 frenar el bucle de eventos. Nunca propaga excepciones: un fallo de correo no
 puede tumbar un registro ni una compra.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -32,7 +33,9 @@ TINTA = "#1c1b19"
 SIENA = "#a64b2a"
 
 
-def _plantilla(titulo: str, saludo: str, cuerpo_html: str, cta: tuple[str, str] | None = None) -> str:
+def _plantilla(
+    titulo: str, saludo: str, cuerpo_html: str, cta: tuple[str, str] | None = None
+) -> str:
     """Envuelve el contenido en la maqueta corporativa."""
     boton = ""
     if cta:
@@ -216,9 +219,7 @@ async def enviar_recuperacion(nombre: str, email: str, token: str) -> bool:
 
 
 async def enviar_confirmacion_compra(venta, numero_factura: str | None = None) -> bool:
-    referencia = (
-        f"<p>Factura <strong>{numero_factura}</strong></p>" if numero_factura else ""
-    )
+    referencia = f"<p>Factura <strong>{numero_factura}</strong></p>" if numero_factura else ""
     cuerpo = (
         f"<p>Registramos tu compra <strong>{venta.numero}</strong>. "
         "Este es el detalle:</p>"
@@ -229,7 +230,9 @@ async def enviar_confirmacion_compra(venta, numero_factura: str | None = None) -
         + "<p>Prepararemos tu pedido y te avisaremos en cuanto salga hacia tu dirección.</p>"
     )
     html = _plantilla(
-        "Confirmación de compra", f"Hola {venta.cliente.nombre},", cuerpo,
+        "Confirmación de compra",
+        f"Hola {venta.cliente.nombre},",
+        cuerpo,
         cta=("Ver mis pedidos", f"{settings.frontend_url}/panel/cliente"),
     )
     return await enviar_email(

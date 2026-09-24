@@ -1,4 +1,5 @@
 """Utilidades compartidas por los modelos ORM."""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import DateTime

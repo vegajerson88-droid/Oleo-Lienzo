@@ -1,4 +1,5 @@
 """Esquemas compartidos por todos los módulos de la API."""
+
 from typing import Generic, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field

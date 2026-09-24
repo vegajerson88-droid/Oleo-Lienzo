@@ -6,8 +6,8 @@ Arquitectura del proyecto:
 
 Todos los endpoints cuelgan del prefijo `/api`.
 """
-import logging
 
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, status
@@ -103,19 +103,34 @@ El IVA aplicado es del **{settings.iva_porcentaje:g}%**.
 """
 
 ETIQUETAS = [
-    {"name": "Autenticación", "description": "Registro, inicio de sesión con JWT y gestión de la contraseña."},
+    {
+        "name": "Autenticación",
+        "description": "Registro, inicio de sesión con JWT y gestión de la contraseña.",
+    },
     {"name": "Usuarios", "description": "CRUD de usuarios, roles y permisos. Solo administrador."},
-    {"name": "Obras / Productos", "description": "Catálogo de obras. Lectura pública, escritura restringida."},
+    {
+        "name": "Obras / Productos",
+        "description": "Catálogo de obras. Lectura pública, escritura restringida.",
+    },
     {"name": "Servicios", "description": "Enmarcado, restauración y envío asegurado."},
     {"name": "Pedidos", "description": "Órdenes del cliente. Confirmar un pedido genera su venta."},
-    {"name": "Ventas", "description": "Registro e historial comercial con filtros y desglose de IVA."},
+    {
+        "name": "Ventas",
+        "description": "Registro e historial comercial con filtros y desglose de IVA.",
+    },
     {"name": "Facturación", "description": "Emisión, consulta y descarga de facturas en PDF."},
     {"name": "Reportes", "description": "Reporte diario de ventas en JSON, PDF y Excel."},
-    {"name": "Dashboard", "description": "Indicadores y gráficos calculados en la base de datos, por rol."},
+    {
+        "name": "Dashboard",
+        "description": "Indicadores y gráficos calculados en la base de datos, por rol.",
+    },
     {"name": "PQR", "description": "Peticiones, quejas, reclamos y sugerencias."},
     {"name": "Chatbot IA", "description": "Asistente de atención al cliente con Groq."},
     {"name": "Pagos (Stripe)", "description": "Checkout alojado y webhook firmado."},
-    {"name": "Inteligencia Artificial", "description": "Modelo propio de precios y redacción asistida."},
+    {
+        "name": "Inteligencia Artificial",
+        "description": "Modelo propio de precios y redacción asistida.",
+    },
     {"name": "Sistema", "description": "Salud y diagnóstico real de cada dependencia."},
 ]
 
@@ -128,7 +143,12 @@ async def lifespan(app: FastAPI):
     app.state.ai_local_model = ai_local.cargar_modelo()
     if app.state.ai_local_model is None:
         logger.info("Modelo de IA local no encontrado; el endpoint lo informará.")
-    logger.info("%s v%s lista en entorno '%s'.", settings.app_name, settings.app_version, settings.environment)
+    logger.info(
+        "%s v%s lista en entorno '%s'.",
+        settings.app_name,
+        settings.app_version,
+        settings.environment,
+    )
     yield
     logger.info("Cerrando %s.", settings.app_name)
 
@@ -211,10 +231,20 @@ async def manejar_error_no_controlado(request: Request, exc: Exception):
 # ── Rutas: todo cuelga de /api ───────────────────────────────────────────
 PREFIJO = "/api"
 for router in (
-    auth.router, usuarios.router, productos.router, servicios.router,
-    pedidos.router, ventas.router, facturas.router, reportes.router,
-    dashboard.router, pqr.router, chatbot.router, pagos.router,
-    ia.router, sistema.router,
+    auth.router,
+    usuarios.router,
+    productos.router,
+    servicios.router,
+    pedidos.router,
+    ventas.router,
+    facturas.router,
+    reportes.router,
+    dashboard.router,
+    pqr.router,
+    chatbot.router,
+    pagos.router,
+    ia.router,
+    sistema.router,
 ):
     app.include_router(router, prefix=PREFIJO)
 

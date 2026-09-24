@@ -4,6 +4,7 @@ Solo se guardan referencias del proveedor (Stripe). Ningún dato de tarjeta
 —número, CVV, fecha de expiración— toca nuestra base de datos: el cliente
 introduce esa información directamente en el checkout alojado por Stripe.
 """
+
 import enum
 
 from sqlalchemy import CheckConstraint, Enum, ForeignKey, Numeric, String, Text
@@ -31,9 +32,7 @@ EstadoPagoDB = Enum(
 
 class Pago(TimestampMixin, Base):
     __tablename__ = "pagos"
-    __table_args__ = (
-        CheckConstraint("monto >= 0", name="ck_pagos_monto_no_negativo"),
-    )
+    __table_args__ = (CheckConstraint("monto >= 0", name="ck_pagos_monto_no_negativo"),)
 
     id: Mapped[int] = mapped_column(primary_key=True)
     venta_id: Mapped[int] = mapped_column(
@@ -41,9 +40,7 @@ class Pago(TimestampMixin, Base):
     )
     proveedor: Mapped[str] = mapped_column(String(30), default="stripe", nullable=False)
     # Identificador de la sesión de checkout en el proveedor.
-    referencia_externa: Mapped[str | None] = mapped_column(
-        String(255), nullable=True, index=True
-    )
+    referencia_externa: Mapped[str | None] = mapped_column(String(255), nullable=True, index=True)
     payment_intent: Mapped[str | None] = mapped_column(String(255), nullable=True)
     estado: Mapped[EstadoPago] = mapped_column(
         EstadoPagoDB, default=EstadoPago.pendiente, nullable=False

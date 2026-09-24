@@ -1,0 +1,29 @@
+# Configuración de estilo del backend.
+#
+#   ruff check app/ tests/ seed.py scripts/     comprobar
+#   ruff check --fix app/                        corregir lo automatizable
+#
+# El conjunto elegido cubre corrección e higiene —errores, código muerto,
+# imports sin usar y orden de importaciones—, que es lo que puede esconder
+# un fallo real. Se dejan fuera los conjuntos puramente estilísticos que
+# chocan con los idiomas de FastAPI (ver las exclusiones de abajo).
+
+line-length = 100
+target-version = "py311"
+
+[lint]
+select = ["E", "W", "F", "I"]
+
+[lint.per-file-ignores]
+# SQLAlchemy usa anotaciones diferidas —Mapped["Usuario"]— que resuelve al
+# configurar los mappers, no al importar el módulo. Ruff no puede seguirlas
+# y las marca como nombres indefinidos, pero son correctas: evitan las
+# importaciones circulares entre modelos.
+"app/models/*.py" = ["F821"]
+
+# Este archivo importa todos los modelos a propósito, para que SQLAlchemy los
+# registre en Base.metadata. Sus `noqa: F401` son deliberados.
+"app/models/__init__.py" = ["F401"]
+
+[lint.isort]
+known-first-party = ["app", "tests"]

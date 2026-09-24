@@ -10,9 +10,11 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# libpq5 es la biblioteca cliente que psycopg necesita en tiempo de ejecución.
+# Solo curl, para el HEALTHCHECK. No hace falta libpq5: psycopg[binary] trae
+# su propia libpq dentro del paquete y enlaza contra ella, no contra la del
+# sistema (comprobado con ldd sobre el módulo compilado).
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends libpq5 curl \
+    && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Las dependencias se copian primero: así Docker reutiliza la capa mientras

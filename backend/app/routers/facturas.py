@@ -1,4 +1,5 @@
 """Facturación: emisión, consulta y descarga en PDF."""
+
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status

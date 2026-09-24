@@ -3,6 +3,7 @@
 La autorización definitiva es siempre responsabilidad del backend: el frontend
 puede ocultar botones, pero quien decide es esta capa.
 """
+
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError

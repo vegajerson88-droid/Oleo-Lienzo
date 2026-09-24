@@ -1,4 +1,5 @@
 """Endpoints de Inteligencia Artificial aplicada al catálogo."""
+
 from fastapi import APIRouter, Depends, Query, Request
 
 from app.dependencies.auth import admin_o_empleado

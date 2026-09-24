@@ -1,4 +1,5 @@
 """Esquemas de servicios (enmarcado, restauración, envío…)."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -17,7 +18,8 @@ class ServicioCreate(ServicioBase):
             "example": {
                 "nombre": "Enmarcado personalizado",
                 "descripcion": "Enmarcado a medida para obras adquiridas en la galería.",
-                "precio": 150000, "activo": True,
+                "precio": 150000,
+                "activo": True,
             }
         }
     )

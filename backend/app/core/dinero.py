@@ -4,6 +4,7 @@ El dinero se calcula siempre con `Decimal` y se redondea a dos decimales con
 ROUND_HALF_UP. Usar `float` acumularía errores de coma flotante que acabarían
 descuadrando facturas.
 """
+
 from decimal import ROUND_HALF_UP, Decimal
 
 CENTAVOS = Decimal("0.01")

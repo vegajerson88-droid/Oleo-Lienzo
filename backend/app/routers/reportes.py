@@ -1,4 +1,5 @@
 """Reporte diario de ventas en JSON, PDF y Excel."""
+
 from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, Query, Response

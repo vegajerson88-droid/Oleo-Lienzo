@@ -1,4 +1,5 @@
 """Pruebas de los mecanismos de seguridad transversales."""
+
 import pytest
 
 from app.core.limiter import limiter
@@ -30,9 +31,9 @@ async def test_el_limitador_corta_los_intentos_de_fuerza_bruta(client):
 async def test_las_contrasenas_se_guardan_con_bcrypt_y_sal():
     hash_1 = hash_password("MismaClave1")
     hash_2 = hash_password("MismaClave1")
-    assert hash_1.startswith("$2b$")           # identificador de bcrypt
-    assert hash_1 != hash_2                    # cada hash lleva su propia sal
-    assert "MismaClave1" not in hash_1         # la contraseña no es recuperable
+    assert hash_1.startswith("$2b$")  # identificador de bcrypt
+    assert hash_1 != hash_2  # cada hash lleva su propia sal
+    assert "MismaClave1" not in hash_1  # la contraseña no es recuperable
     assert verify_password("MismaClave1", hash_1)
     assert not verify_password("OtraClave1", hash_1)
 
@@ -53,9 +54,7 @@ async def test_los_errores_comparten_un_formato_uniforme(client, token_admin):
     assert no_encontrado.status_code == 404
     assert "detail" in no_encontrado.json()
 
-    validacion = await client.post(
-        "/api/auth/registro", json={"nombre": "X"}
-    )
+    validacion = await client.post("/api/auth/registro", json={"nombre": "X"})
     assert validacion.status_code == 422
     cuerpo = validacion.json()
     assert cuerpo["error"] == "ValidationError"

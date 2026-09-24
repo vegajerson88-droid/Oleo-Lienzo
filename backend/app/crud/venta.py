@@ -8,6 +8,7 @@ En ambos casos se recalculan los importes del lado del servidor a partir de
 los precios vigentes en la base de datos. Nunca se confía en el total que
 envíe el cliente.
 """
+
 from datetime import date, datetime, time, timezone
 from decimal import Decimal
 
@@ -65,9 +66,7 @@ async def _resolver_linea(
         precio = a_decimal(obra.precio)
         descuento = a_decimal(getattr(item, "descuento", 0))
         if descuento > precio * item.cantidad:
-            raise BusinessRuleError(
-                f"El descuento de '{obra.titulo}' supera el valor de la línea."
-            )
+            raise BusinessRuleError(f"El descuento de '{obra.titulo}' supera el valor de la línea.")
         linea = DetalleVenta(
             obra_id=obra.id,
             descripcion=f"{obra.titulo} — {obra.artista}",
@@ -86,9 +85,7 @@ async def _resolver_linea(
     precio = a_decimal(servicio.precio)
     descuento = a_decimal(getattr(item, "descuento", 0))
     if descuento > precio * item.cantidad:
-        raise BusinessRuleError(
-            f"El descuento de '{servicio.nombre}' supera el valor de la línea."
-        )
+        raise BusinessRuleError(f"El descuento de '{servicio.nombre}' supera el valor de la línea.")
     linea = DetalleVenta(
         servicio_id=servicio.id,
         descripcion=servicio.nombre,
@@ -120,7 +117,7 @@ async def _armar_venta(
             obras_a_descontar.append((obra, item.cantidad))
 
     totales = calcular_totales(
-        [l.subtotal for l in lineas], descuento_global, settings.iva_tasa
+        [linea.subtotal for linea in lineas], descuento_global, settings.iva_tasa
     )
 
     venta = Venta(
@@ -165,9 +162,7 @@ async def crear_venta(db: AsyncSession, data: VentaCreate, usuario_id: int | Non
     )
 
 
-async def construir_venta_desde_pedido(
-    db: AsyncSession, pedido, usuario_id: int | None
-) -> Venta:
+async def construir_venta_desde_pedido(db: AsyncSession, pedido, usuario_id: int | None) -> Venta:
     """Prepara la venta de un pedido confirmado **sin hacer commit**.
 
     La deja añadida a la sesión y con su consecutivo asignado, para que quien
@@ -189,7 +184,7 @@ async def construir_venta_desde_pedido(
         )
         for d in pedido.detalles
     ]
-    totales = calcular_totales([l.subtotal for l in lineas], 0, settings.iva_tasa)
+    totales = calcular_totales([linea.subtotal for linea in lineas], 0, settings.iva_tasa)
 
     venta = Venta(
         numero="",
@@ -252,9 +247,7 @@ async def ventas_del_dia(db: AsyncSession, dia: date) -> list[Venta]:
     """Todas las ventas de una fecha, para el reporte diario."""
     filtros = VentaFiltros(fecha_inicio=dia, fecha_fin=dia)
     query = _aplicar_filtros(select(Venta).options(*_RELACIONES), filtros)
-    return list(
-        (await db.execute(query.order_by(Venta.creado_en))).unique().scalars().all()
-    )
+    return list((await db.execute(query.order_by(Venta.creado_en))).unique().scalars().all())
 
 
 async def cambiar_estado(db: AsyncSession, venta_id: int, nuevo_estado: EstadoVenta) -> Venta:

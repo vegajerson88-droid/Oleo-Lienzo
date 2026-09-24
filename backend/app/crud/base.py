@@ -1,4 +1,5 @@
 """Utilidades compartidas por la capa CRUD."""
+
 from sqlalchemy import Select, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,9 +12,7 @@ async def contar(db: AsyncSession, query: Select) -> int:
     SELECT COUNT(*) y el trabajo lo hace PostgreSQL.
     """
     sin_orden = query.order_by(None).limit(None).offset(None)
-    return (
-        await db.execute(select(func.count()).select_from(sin_orden.subquery()))
-    ).scalar_one()
+    return (await db.execute(select(func.count()).select_from(sin_orden.subquery()))).scalar_one()
 
 
 def paginar(query: Select, page: int, page_size: int) -> Select:

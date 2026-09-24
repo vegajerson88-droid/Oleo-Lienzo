@@ -1,11 +1,12 @@
 """Gestión de usuarios. Reservada al rol administrador."""
+
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import DomainError
 from app.crud import usuario as usuario_crud
 from app.database import get_db
-from app.dependencies.auth import get_current_user, solo_admin
+from app.dependencies.auth import solo_admin
 from app.dependencies.common import (
     RESPUESTA_404,
     RESPUESTA_409,
@@ -64,9 +65,7 @@ async def listar_usuarios(
     summary="Listar roles y sus permisos",
     description="Catálogo de roles con los permisos asignados a cada uno.",
 )
-async def listar_roles(
-    db: AsyncSession = Depends(get_db), _admin: Usuario = Depends(solo_admin)
-):
+async def listar_roles(db: AsyncSession = Depends(get_db), _admin: Usuario = Depends(solo_admin)):
     return await usuario_crud.list_roles(db)
 
 

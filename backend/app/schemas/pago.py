@@ -1,4 +1,5 @@
 """Esquemas de la pasarela de pago (Stripe)."""
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.pago import EstadoPago

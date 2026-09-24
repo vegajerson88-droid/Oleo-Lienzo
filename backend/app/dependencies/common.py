@@ -1,4 +1,5 @@
 """Tipos y utilidades compartidos por los routers."""
+
 from typing import Annotated
 
 from fastapi import Path, Query
@@ -25,5 +26,7 @@ RESPUESTAS_AUTH = {
 }
 
 RESPUESTA_404 = {404: {"description": "El recurso solicitado no existe."}}
-RESPUESTA_409 = {409: {"description": "Conflicto: el recurso ya existe o viola una restricción única."}}
+RESPUESTA_409 = {
+    409: {"description": "Conflicto: el recurso ya existe o viola una restricción única."}
+}
 RESPUESTA_422 = {422: {"description": "Los datos enviados no superan la validación."}}

@@ -1,4 +1,5 @@
 """Módulo de ventas: registro, historial e informes básicos."""
+
 from datetime import date
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
@@ -46,9 +47,14 @@ async def listar_ventas(
 ):
     try:
         filtros = VentaFiltros(
-            fecha_inicio=fecha_inicio, fecha_fin=fecha_fin, cliente_id=cliente_id,
-            obra_id=obra_id, servicio_id=servicio_id, estado=estado,
-            total_min=total_min, total_max=total_max,
+            fecha_inicio=fecha_inicio,
+            fecha_fin=fecha_fin,
+            cliente_id=cliente_id,
+            obra_id=obra_id,
+            servicio_id=servicio_id,
+            estado=estado,
+            total_min=total_min,
+            total_max=total_max,
         )
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
@@ -80,9 +86,7 @@ async def obtener_venta(
         raise HTTPException(status_code=exc.status_code, detail=exc.detail)
 
     if usuario.rol.nombre == "cliente" and venta.cliente_id != usuario.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Esta venta no es tuya."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Esta venta no es tuya.")
     return venta
 
 

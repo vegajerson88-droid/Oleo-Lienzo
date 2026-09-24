@@ -1,4 +1,5 @@
 """Persistencia de las conversaciones del chatbot."""
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

@@ -1,4 +1,5 @@
 """Módulo de PQR: peticiones, quejas, reclamos y sugerencias."""
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -102,9 +103,7 @@ async def obtener_pqr(
         raise HTTPException(status_code=exc.status_code, detail=exc.detail)
 
     if usuario.rol.nombre == "cliente" and pqr.cliente_id != usuario.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Esta PQR no es tuya."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Esta PQR no es tuya.")
     return pqr
 
 

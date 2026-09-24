@@ -3,6 +3,7 @@
 Pueden radicarlas clientes autenticados o visitantes desde el chatbot; por eso
 `cliente_id` admite nulos y se guardan nombre y correo de contacto.
 """
+
 import enum
 from datetime import datetime
 
@@ -79,16 +80,12 @@ class PQR(TimestampMixin, Base):
     respondido_por_id: Mapped[int | None] = mapped_column(
         ForeignKey("usuarios.id", ondelete="SET NULL"), nullable=True
     )
-    respondido_en: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    respondido_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     cliente: Mapped["Usuario | None"] = relationship(
         back_populates="pqrs", foreign_keys=[cliente_id], lazy="joined"
     )
-    respondido_por: Mapped["Usuario | None"] = relationship(
-        foreign_keys=[respondido_por_id]
-    )
+    respondido_por: Mapped["Usuario | None"] = relationship(foreign_keys=[respondido_por_id])
 
     def __repr__(self) -> str:
         return f"<PQR {self.radicado} {self.estado}>"

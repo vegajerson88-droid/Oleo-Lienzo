@@ -1,4 +1,5 @@
 """Líneas de un pedido: obras y/o servicios con su cantidad y precio."""
+
 from sqlalchemy import CheckConstraint, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -9,9 +10,7 @@ class DetallePedido(Base):
     __tablename__ = "detalles_pedido"
     __table_args__ = (
         CheckConstraint("cantidad > 0", name="ck_detalles_pedido_cantidad_positiva"),
-        CheckConstraint(
-            "precio_unitario >= 0", name="ck_detalles_pedido_precio_no_negativo"
-        ),
+        CheckConstraint("precio_unitario >= 0", name="ck_detalles_pedido_precio_no_negativo"),
         # Cada línea apunta exactamente a una obra o a un servicio, nunca a
         # ambos ni a ninguno.
         CheckConstraint(

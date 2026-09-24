@@ -8,6 +8,7 @@ Una venta nace de dos maneras:
 Guarda el desglose económico completo (subtotal, descuento, IVA, total) porque
 es la fuente de la que se alimentan los reportes, los dashboards y las facturas.
 """
+
 import enum
 
 from sqlalchemy import CheckConstraint, Enum, ForeignKey, Index, Numeric, String, Text

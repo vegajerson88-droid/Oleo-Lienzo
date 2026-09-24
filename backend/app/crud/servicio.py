@@ -1,4 +1,5 @@
 """Operaciones de base de datos sobre los servicios de la galería."""
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -65,7 +66,9 @@ async def update_servicio(db: AsyncSession, servicio_id: int, data: ServicioUpda
     """PATCH: modifica solo los campos enviados."""
     servicio = await get_by_id(db, servicio_id)
     cambios = data.model_dump(exclude_unset=True)
-    if "nombre" in cambios and await _nombre_duplicado(db, cambios["nombre"], excluir_id=servicio_id):
+    if "nombre" in cambios and await _nombre_duplicado(
+        db, cambios["nombre"], excluir_id=servicio_id
+    ):
         raise ConflictError(f"Ya existe un servicio llamado '{cambios['nombre']}'.")
     for field, value in cambios.items():
         setattr(servicio, field, value)

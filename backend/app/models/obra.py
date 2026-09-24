@@ -1,4 +1,5 @@
 """Obras de arte: el catálogo de productos de la galería."""
+
 from sqlalchemy import Boolean, CheckConstraint, Index, Integer, Numeric, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 

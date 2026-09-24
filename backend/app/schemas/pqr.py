@@ -1,4 +1,5 @@
 """Esquemas del módulo de PQR (peticiones, quejas y reclamos)."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -35,7 +36,7 @@ class PQRResponder(BaseModel):
         json_schema_extra={
             "example": {
                 "respuesta": "Lamentamos el inconveniente. Programamos la recogida "
-                             "y el reemplazo del marco sin costo."
+                "y el reemplazo del marco sin costo."
             }
         }
     )

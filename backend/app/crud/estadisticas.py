@@ -6,6 +6,7 @@ frontend nunca calcula ni inventa un número (requisito 15 del quinto avance).
 `func.date()` se usa para agrupar por día porque es la única expresión que
 funciona igual en PostgreSQL y en SQLite (el CAST a DATE no lo es).
 """
+
 from datetime import date, datetime, time, timedelta, timezone
 
 from sqlalchemy import Select, func, select
@@ -56,16 +57,18 @@ async def indicadores_admin(
     """Panorama completo del sistema para el rol administrador."""
     ventas_q = _en_rango(
         select(Venta).where(Venta.estado.in_(VENTAS_EFECTIVAS)),
-        Venta.creado_en, desde, hasta,
+        Venta.creado_en,
+        desde,
+        hasta,
     )
     facturado_q = _en_rango(
         select(func.coalesce(func.sum(Factura.total), 0)), Factura.fecha_emision, desde, hasta
     )
     ingresos_q = _en_rango(
-        select(func.coalesce(func.sum(Venta.total), 0)).where(
-            Venta.estado == EstadoVenta.pagada
-        ),
-        Venta.creado_en, desde, hasta,
+        select(func.coalesce(func.sum(Venta.total), 0)).where(Venta.estado == EstadoVenta.pagada),
+        Venta.creado_en,
+        desde,
+        hasta,
     )
 
     return {
@@ -80,18 +83,16 @@ async def indicadores_admin(
         "total_servicios": await _escalar(
             db, select(func.count()).select_from(Servicio).where(Servicio.activo.is_(True))
         ),
-        "total_ventas": await _escalar(
-            db, select(func.count()).select_from(ventas_q.subquery())
-        ),
+        "total_ventas": await _escalar(db, select(func.count()).select_from(ventas_q.subquery())),
         "ingresos": float(await _escalar(db, ingresos_q)),
         "total_facturado": float(await _escalar(db, facturado_q)),
         "total_facturas": await _escalar(db, select(func.count()).select_from(Factura)),
         "pqr_recibidas": await _escalar(db, select(func.count()).select_from(PQR)),
         "pqr_pendientes": await _escalar(
             db,
-            select(func.count()).select_from(PQR).where(
-                PQR.estado.in_((EstadoPQR.pendiente, EstadoPQR.en_proceso))
-            ),
+            select(func.count())
+            .select_from(PQR)
+            .where(PQR.estado.in_((EstadoPQR.pendiente, EstadoPQR.en_proceso))),
         ),
         "total_pedidos": await _escalar(db, select(func.count()).select_from(Pedido)),
     }
@@ -103,8 +104,12 @@ async def indicadores_empleado(
     """Subconjunto operativo: el empleado no ve usuarios ni facturación global."""
     completo = await indicadores_admin(db, desde, hasta)
     visibles = (
-        "total_obras", "obras_disponibles", "total_servicios",
-        "total_ventas", "total_pedidos", "pqr_pendientes",
+        "total_obras",
+        "obras_disponibles",
+        "total_servicios",
+        "total_ventas",
+        "total_pedidos",
+        "pqr_pendientes",
     )
     return {k: completo[k] for k in visibles}
 
@@ -130,7 +135,9 @@ async def indicadores_cliente(db: AsyncSession, cliente_id: int) -> dict:
         ),
         "mis_pqr_abiertas": await _escalar(
             db,
-            select(func.count()).select_from(PQR).where(
+            select(func.count())
+            .select_from(PQR)
+            .where(
                 PQR.cliente_id == cliente_id,
                 PQR.estado.in_((EstadoPQR.pendiente, EstadoPQR.en_proceso)),
             ),
@@ -207,7 +214,9 @@ async def variacion_ingresos(db: AsyncSession, dias: int = 7) -> float | None:
             select(func.coalesce(func.sum(Venta.total), 0)).where(
                 Venta.estado == EstadoVenta.pagada
             ),
-            Venta.creado_en, desde, hasta,
+            Venta.creado_en,
+            desde,
+            hasta,
         )
         return float(await _escalar(db, q))
 

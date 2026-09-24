@@ -1,4 +1,5 @@
 """Pedidos: la orden que el cliente arma desde el sitio web."""
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -62,9 +63,7 @@ async def obtener_pedido(
         raise HTTPException(status_code=exc.status_code, detail=exc.detail)
 
     if usuario.rol.nombre == "cliente" and pedido.cliente_id != usuario.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Este pedido no es tuyo."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Este pedido no es tuyo.")
     return pedido
 
 

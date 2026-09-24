@@ -1,4 +1,5 @@
 """Hashing de contraseñas y emisión/verificación de JSON Web Tokens."""
+
 from datetime import datetime, timedelta, timezone
 
 from jose import jwt

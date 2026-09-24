@@ -4,6 +4,7 @@ El archivo se entrega con las columnas separadas, tipos numéricos reales
 (no texto) y un autofiltro activo, para que quien lo reciba pueda ordenar,
 filtrar y hacer tablas dinámicas sin limpiar nada antes.
 """
+
 from __future__ import annotations
 
 from io import BytesIO
@@ -25,10 +26,20 @@ FORMATO_MONEDA = '"$" #,##0.00'
 _borde_fino = Border(bottom=Side(style="thin", color="FFD8D2C4"))
 
 CABECERAS = [
-    ("N.º venta", 18), ("Fecha", 12), ("Hora", 9), ("Cliente", 26),
-    ("Documento", 16), ("Productos / servicios", 46), ("Unidades", 11),
-    ("Subtotal", 15), ("Descuento", 14), ("IVA", 14), ("Total", 16),
-    ("Método de pago", 16), ("Estado", 16), ("Factura", 14),
+    ("N.º venta", 18),
+    ("Fecha", 12),
+    ("Hora", 9),
+    ("Cliente", 26),
+    ("Documento", 16),
+    ("Productos / servicios", 46),
+    ("Unidades", 11),
+    ("Subtotal", 15),
+    ("Descuento", 14),
+    ("IVA", 14),
+    ("Total", 16),
+    ("Método de pago", 16),
+    ("Estado", 16),
+    ("Factura", 14),
 ]
 
 
@@ -39,7 +50,9 @@ def generar_reporte_ventas_excel(ventas: list, dia) -> bytes:
 
     # ── Encabezado del documento ─────────────────────────────────────────
     hoja.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(CABECERAS))
-    titulo = hoja.cell(row=1, column=1, value=f"{settings.empresa_nombre} · Reporte diario de ventas")
+    titulo = hoja.cell(
+        row=1, column=1, value=f"{settings.empresa_nombre} · Reporte diario de ventas"
+    )
     titulo.font = Font(bold=True, size=14, color=PAPEL)
     titulo.fill = PatternFill("solid", fgColor=VERDE)
     titulo.alignment = Alignment(horizontal="left", vertical="center", indent=1)
@@ -47,9 +60,10 @@ def generar_reporte_ventas_excel(ventas: list, dia) -> bytes:
 
     hoja.merge_cells(start_row=2, start_column=1, end_row=2, end_column=len(CABECERAS))
     subtitulo = hoja.cell(
-        row=2, column=1,
+        row=2,
+        column=1,
         value=f"Fecha del reporte: {dia.strftime('%d/%m/%Y')}  ·  "
-              f"NIT {settings.empresa_nit}  ·  {settings.empresa_email}",
+        f"NIT {settings.empresa_nit}  ·  {settings.empresa_email}",
     )
     subtitulo.font = Font(size=9, color="FF6B675F")
     subtitulo.alignment = Alignment(horizontal="left", vertical="center", indent=1)
@@ -104,7 +118,9 @@ def generar_reporte_ventas_excel(ventas: list, dia) -> bytes:
         fila += 1
 
     if not ventas:
-        hoja.cell(row=fila, column=1, value=f"No se registraron ventas el {dia.strftime('%d/%m/%Y')}.")
+        hoja.cell(
+            row=fila, column=1, value=f"No se registraron ventas el {dia.strftime('%d/%m/%Y')}."
+        )
         hoja.cell(row=fila, column=1).font = Font(italic=True, size=9, color="FF6B675F")
         fila += 1
 
@@ -162,7 +178,9 @@ def generar_reporte_ventas_excel(ventas: list, dia) -> bytes:
     fila_resumen = 2
     for estado, (conteo, monto) in sorted(por_estado.items()):
         resumen.cell(row=fila_resumen, column=1, value=estado).font = Font(size=9)
-        resumen.cell(row=fila_resumen, column=2, value=conteo).alignment = Alignment(horizontal="center")
+        resumen.cell(row=fila_resumen, column=2, value=conteo).alignment = Alignment(
+            horizontal="center"
+        )
         celda_total = resumen.cell(row=fila_resumen, column=3, value=monto)
         celda_total.number_format = FORMATO_MONEDA
         fila_resumen += 1

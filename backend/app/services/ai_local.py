@@ -5,6 +5,7 @@ artData.js) y se carga una única vez en el lifespan de la aplicación
 (app.state.ai_local_model). Si el modelo no existe, la API igual arranca:
 el endpoint simplemente informa que el modelo no está disponible.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -50,7 +51,7 @@ def predecir_precio(modelo: ModeloPrecio | None, anio: int, tecnica: str) -> dic
         return {
             "disponible": False,
             "detalle": "El modelo de IA local no está entrenado todavía "
-                       "(faltan datos suficientes de obras). Ejecuta seed.py con más registros.",
+            "(faltan datos suficientes de obras). Ejecuta seed.py con más registros.",
         }
     es_oleo = 1.0 if "óleo" in tecnica.lower() else 0.0
     x = np.array([[anio, es_oleo]])

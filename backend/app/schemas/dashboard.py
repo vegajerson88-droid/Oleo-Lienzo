@@ -3,6 +3,7 @@
 Todos los valores llegan calculados desde la base de datos: el frontend no
 escribe ni un solo número a mano (requisito 15 del quinto avance).
 """
+
 from pydantic import BaseModel, Field
 
 

@@ -5,6 +5,7 @@ Si la clave falta o el proveedor falla, degrada de forma explícita: informa de
 que no está disponible en lugar de devolver un texto inventado como si fuera
 una respuesta real del modelo.
 """
+
 from __future__ import annotations
 
 import logging

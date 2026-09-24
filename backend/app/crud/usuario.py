@@ -1,4 +1,5 @@
 """Operaciones de base de datos sobre usuarios, roles y permisos."""
+
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -68,9 +69,7 @@ async def list_usuarios(
     return list((await db.execute(query)).scalars().unique().all()), total
 
 
-async def _verificar_unicidad(
-    db: AsyncSession, email: str, numero_documento: str
-) -> None:
+async def _verificar_unicidad(db: AsyncSession, email: str, numero_documento: str) -> None:
     """Un correo y un documento no pueden repetirse: responde 409 si ya existen."""
     if await get_by_email(db, email):
         raise ConflictError("Ya existe un usuario registrado con ese correo.")

@@ -3,7 +3,9 @@
 Generarlo en vez de escribirlo a mano garantiza que el script SQL y los
 modelos ORM nunca se desincronicen.
 """
+
 import sys
+
 sys.path.insert(0, "/home/user/Oleo-Lienzo/backend")
 
 from sqlalchemy.dialects import postgresql
@@ -182,7 +184,8 @@ for indice, (titulo, artista, anio, tecnica, precio, descripcion) in enumerate(O
 partes.append("\n-- ── Servicios ──────────────────────────────────────────────────────────")
 for indice, (nombre, descripcion, precio) in enumerate(SERVICIOS, start=1):
     partes.append(
-        "INSERT INTO servicios (id, nombre, descripcion, precio, activo, creado_en, actualizado_en)\n"
+        "INSERT INTO servicios (id, nombre, descripcion, precio, activo, "
+        "creado_en, actualizado_en)\n"
         f"VALUES ({indice}, {esc(nombre)}, {esc(descripcion)}, {precio}, TRUE, NOW(), NOW());"
     )
 

@@ -4,6 +4,7 @@ La factura congela los datos del cliente y los importes en el momento de
 emitirse: si luego cambian el perfil del cliente o el catálogo, el documento
 ya emitido no se altera.
 """
+
 from datetime import date, datetime, time, timezone
 
 from sqlalchemy import or_, select
@@ -46,9 +47,7 @@ async def emitir_factura(
     venta = await get_venta_by_id(db, venta_id)
 
     if venta.factura is not None:
-        raise ConflictError(
-            f"La venta {venta.numero} ya tiene la factura {venta.factura.numero}."
-        )
+        raise ConflictError(f"La venta {venta.numero} ya tiene la factura {venta.factura.numero}.")
     if venta.estado == EstadoVenta.anulada:
         raise BusinessRuleError("No se puede facturar una venta anulada.")
 
@@ -61,9 +60,7 @@ async def emitir_factura(
         venta_id=venta.id,
         cliente_id=cliente.id,
         estado=(
-            EstadoFactura.pagada
-            if venta.estado == EstadoVenta.pagada
-            else EstadoFactura.emitida
+            EstadoFactura.pagada if venta.estado == EstadoVenta.pagada else EstadoFactura.emitida
         ),
         fecha_emision=datetime.now(timezone.utc),
         cliente_nombre=f"{cliente.nombre} {cliente.apellido}",
@@ -106,13 +103,11 @@ async def list_facturas(
         query = query.where(Factura.estado == estado)
     if fecha_inicio:
         query = query.where(
-            Factura.fecha_emision
-            >= datetime.combine(fecha_inicio, time.min, tzinfo=timezone.utc)
+            Factura.fecha_emision >= datetime.combine(fecha_inicio, time.min, tzinfo=timezone.utc)
         )
     if fecha_fin:
         query = query.where(
-            Factura.fecha_emision
-            <= datetime.combine(fecha_fin, time.max, tzinfo=timezone.utc)
+            Factura.fecha_emision <= datetime.combine(fecha_fin, time.max, tzinfo=timezone.utc)
         )
     if buscar:
         patron = f"%{buscar}%"
@@ -125,13 +120,13 @@ async def list_facturas(
         )
 
     total = await contar(db, query)
-    query = paginar(query.order_by(Factura.fecha_emision.desc(), Factura.id.desc()), page, page_size)
+    query = paginar(
+        query.order_by(Factura.fecha_emision.desc(), Factura.id.desc()), page, page_size
+    )
     return list((await db.execute(query)).unique().scalars().all()), total
 
 
-async def cambiar_estado(
-    db: AsyncSession, factura_id: int, nuevo_estado: EstadoFactura
-) -> Factura:
+async def cambiar_estado(db: AsyncSession, factura_id: int, nuevo_estado: EstadoFactura) -> Factura:
     factura = await get_by_id(db, factura_id)
     permitidos = TRANSICIONES_FACTURA.get(factura.estado, set())
     if nuevo_estado not in permitidos:

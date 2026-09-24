@@ -1,4 +1,5 @@
 """Pruebas de registro, inicio de sesión y gestión de la contraseña."""
+
 import pytest
 
 from tests.conftest import cabecera
@@ -6,10 +7,15 @@ from tests.conftest import cabecera
 pytestmark = pytest.mark.asyncio
 
 REGISTRO_VALIDO = {
-    "nombre": "Nuevo", "apellido": "Usuario", "tipo_documento": "CC",
-    "numero_documento": "99999999", "direccion": "Calle Falsa 123",
-    "telefono": "3009999999", "email": "nuevo@test.com",
-    "password": "Clave1234", "confirmar_password": "Clave1234",
+    "nombre": "Nuevo",
+    "apellido": "Usuario",
+    "tipo_documento": "CC",
+    "numero_documento": "99999999",
+    "direccion": "Calle Falsa 123",
+    "telefono": "3009999999",
+    "email": "nuevo@test.com",
+    "password": "Clave1234",
+    "confirmar_password": "Clave1234",
 }
 
 
@@ -38,13 +44,13 @@ async def test_registro_documento_duplicado_409(client):
 @pytest.mark.parametrize(
     "campo,valor",
     [
-        ("password", "123"),                 # no cumple la política
+        ("password", "123"),  # no cumple la política
         ("confirmar_password", "Otra1234"),  # no coincide
         ("email", "no-es-un-email"),
-        ("telefono", "abc1234"),             # solo dígitos
-        ("numero_documento", "12"),          # demasiado corto
-        ("nombre", "Juan123"),               # solo letras
-        ("tipo_documento", "XX"),            # fuera del catálogo
+        ("telefono", "abc1234"),  # solo dígitos
+        ("numero_documento", "12"),  # demasiado corto
+        ("nombre", "Juan123"),  # solo letras
+        ("tipo_documento", "XX"),  # fuera del catálogo
     ],
 )
 async def test_registro_validaciones_422(client, campo, valor):
@@ -94,7 +100,8 @@ async def test_login_email_inexistente_da_el_mismo_error(client):
 
 async def test_login_usuario_inactivo_403(client, token_admin, id_cliente):
     await client.patch(
-        f"/api/usuarios/{id_cliente}/estado", json={"activo": False},
+        f"/api/usuarios/{id_cliente}/estado",
+        json={"activo": False},
         headers=cabecera(token_admin),
     )
     resp = await client.post(
@@ -173,8 +180,11 @@ async def test_recuperar_password_no_revela_si_el_correo_existe(client):
 async def test_restablecer_con_token_invalido_400(client):
     resp = await client.post(
         "/api/auth/restablecer-password",
-        json={"token": "esto.no.es.un.token", "password": "NuevaClave1",
-              "confirmar_password": "NuevaClave1"},
+        json={
+            "token": "esto.no.es.un.token",
+            "password": "NuevaClave1",
+            "confirmar_password": "NuevaClave1",
+        },
     )
     assert resp.status_code == 400
 
@@ -185,8 +195,7 @@ async def test_restablecer_con_token_valido(client):
     token = create_reset_token("cliente@test.com")
     resp = await client.post(
         "/api/auth/restablecer-password",
-        json={"token": token, "password": "Restablecida1",
-              "confirmar_password": "Restablecida1"},
+        json={"token": token, "password": "Restablecida1", "confirmar_password": "Restablecida1"},
     )
     assert resp.status_code == 200
     login = await client.post(
@@ -199,9 +208,7 @@ async def test_token_de_reset_no_sirve_para_autenticarse(client):
     """Un enlace de recuperación no puede dar acceso a la API."""
     from app.core.security import create_reset_token
 
-    resp = await client.get(
-        "/api/auth/me", headers=cabecera(create_reset_token("admin@test.com"))
-    )
+    resp = await client.get("/api/auth/me", headers=cabecera(create_reset_token("admin@test.com")))
     assert resp.status_code == 401
 
 

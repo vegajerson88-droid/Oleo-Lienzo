@@ -10,6 +10,7 @@ que usa el proyecto en producción— basta con exportar la variable:
 Cada prueba recibe una base recién creada y poblada con tres usuarios, uno por
 rol, de modo que ninguna pueda contaminar a otra.
 """
+
 import os
 
 import pytest_asyncio
@@ -21,9 +22,7 @@ from app.core.limiter import limiter
 from app.core.security import hash_password
 from app.database import Base, get_db
 from app.main import app
-from app.models.obra import Obra
 from app.models.rol import Permiso, Rol
-from app.models.servicio import Servicio
 from app.models.usuario import Usuario
 
 URL_PRUEBAS = os.getenv("TEST_DATABASE_URL", "sqlite+aiosqlite:///:memory:")
@@ -38,9 +37,7 @@ opciones = (
 )
 
 test_engine = create_async_engine(URL_PRUEBAS, **opciones)
-TestSessionLocal = async_sessionmaker(
-    bind=test_engine, class_=AsyncSession, expire_on_commit=False
-)
+TestSessionLocal = async_sessionmaker(bind=test_engine, class_=AsyncSession, expire_on_commit=False)
 
 
 async def _override_get_db():
@@ -93,10 +90,15 @@ async def preparar_db():
         for nombre, apellido, doc, email, password, rol in USUARIOS_PRUEBA:
             db.add(
                 Usuario(
-                    nombre=nombre, apellido=apellido, tipo_documento="CC",
-                    numero_documento=doc, direccion="Calle de Prueba 123",
-                    telefono="3000000000", email=email,
-                    password_hash=hash_password(password), rol_id=roles[rol].id,
+                    nombre=nombre,
+                    apellido=apellido,
+                    tipo_documento="CC",
+                    numero_documento=doc,
+                    direccion="Calle de Prueba 123",
+                    telefono="3000000000",
+                    email=email,
+                    password_hash=hash_password(password),
+                    rol_id=roles[rol].id,
                 )
             )
         await db.commit()
@@ -145,9 +147,13 @@ async def obra(client, token_empleado):
     resp = await client.post(
         "/api/productos",
         json={
-            "titulo": "Obra de Prueba", "artista": "Artista Prueba", "anio": 2022,
-            "tecnica": "Óleo sobre lienzo", "precio": 100000,
-            "descripcion": "Descripción de prueba suficientemente larga.", "stock": 5,
+            "titulo": "Obra de Prueba",
+            "artista": "Artista Prueba",
+            "anio": 2022,
+            "tecnica": "Óleo sobre lienzo",
+            "precio": 100000,
+            "descripcion": "Descripción de prueba suficientemente larga.",
+            "stock": 5,
         },
         headers=cabecera(token_empleado),
     )

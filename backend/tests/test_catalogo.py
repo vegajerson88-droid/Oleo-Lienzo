@@ -1,4 +1,5 @@
 """Pruebas del catálogo: obras (productos) y servicios."""
+
 import pytest
 
 from tests.conftest import cabecera
@@ -6,8 +7,11 @@ from tests.conftest import cabecera
 pytestmark = pytest.mark.asyncio
 
 OBRA_VALIDA = {
-    "titulo": "Nueva Obra", "artista": "Artista Nuevo", "anio": 2023,
-    "tecnica": "Acrílico sobre lienzo", "precio": 250000,
+    "titulo": "Nueva Obra",
+    "artista": "Artista Nuevo",
+    "anio": 2023,
+    "tecnica": "Acrílico sobre lienzo",
+    "precio": 250000,
     "descripcion": "Descripción de prueba suficientemente larga.",
 }
 
@@ -32,16 +36,12 @@ async def test_crear_obra_sin_token_401(client):
 
 
 async def test_crear_obra_cliente_403(client, token_cliente):
-    resp = await client.post(
-        "/api/productos", json=OBRA_VALIDA, headers=cabecera(token_cliente)
-    )
+    resp = await client.post("/api/productos", json=OBRA_VALIDA, headers=cabecera(token_cliente))
     assert resp.status_code == 403
 
 
 async def test_crear_obra_empleado_201(client, token_empleado):
-    resp = await client.post(
-        "/api/productos", json=OBRA_VALIDA, headers=cabecera(token_empleado)
-    )
+    resp = await client.post("/api/productos", json=OBRA_VALIDA, headers=cabecera(token_empleado))
     assert resp.status_code == 201
     assert resp.json()["titulo"] == "Nueva Obra"
 
@@ -58,7 +58,8 @@ async def test_eliminar_obra_solo_admin(client, obra, token_empleado, token_admi
 # ── PUT frente a PATCH ───────────────────────────────────────────────────
 async def test_put_exige_el_recurso_completo(client, obra, token_empleado):
     parcial = await client.put(
-        f"/api/productos/{obra['id']}", json={"titulo": "Solo el titulo"},
+        f"/api/productos/{obra['id']}",
+        json={"titulo": "Solo el titulo"},
         headers=cabecera(token_empleado),
     )
     assert parcial.status_code == 422
@@ -79,7 +80,8 @@ async def test_put_reemplaza_todos_los_campos(client, obra, token_empleado):
 
 async def test_patch_solo_toca_lo_enviado(client, obra, token_empleado):
     resp = await client.patch(
-        f"/api/productos/{obra['id']}", json={"precio": 999000},
+        f"/api/productos/{obra['id']}",
+        json={"precio": 999000},
         headers=cabecera(token_empleado),
     )
     assert resp.status_code == 200
@@ -92,13 +94,13 @@ async def test_patch_solo_toca_lo_enviado(client, obra, token_empleado):
 @pytest.mark.parametrize(
     "campo,valor",
     [
-        ("anio", 1000),        # anterior al mínimo
-        ("anio", 3000),        # futuro
-        ("precio", 0),         # debe ser > 0
+        ("anio", 1000),  # anterior al mínimo
+        ("anio", 3000),  # futuro
+        ("precio", 0),  # debe ser > 0
         ("precio", -5000),
-        ("titulo", "X"),       # demasiado corto
-        ("descripcion", "ab"), # demasiado corta
-        ("stock", -1),         # no puede ser negativo
+        ("titulo", "X"),  # demasiado corto
+        ("descripcion", "ab"),  # demasiado corta
+        ("stock", -1),  # no puede ser negativo
     ],
 )
 async def test_validaciones_de_obra_422(client, token_empleado, campo, valor):
@@ -111,7 +113,9 @@ async def test_validaciones_de_obra_422(client, token_empleado, campo, valor):
 # ── Filtros y paginación ─────────────────────────────────────────────────
 async def test_filtros_y_paginacion(client, token_empleado):
     for titulo, artista, precio in [
-        ("Amanecer", "Marina", 100000), ("Ocaso", "Marina", 500000), ("Otra", "Iván", 900000)
+        ("Amanecer", "Marina", 100000),
+        ("Ocaso", "Marina", 500000),
+        ("Otra", "Iván", 900000),
     ]:
         await client.post(
             "/api/productos",
@@ -152,7 +156,8 @@ async def test_crear_servicio_nombre_duplicado_409(client, token_empleado):
 async def test_servicio_put_y_patch(client, servicio, token_empleado):
     assert (
         await client.put(
-            f"/api/servicios/{servicio['id']}", json={"nombre": "Incompleto"},
+            f"/api/servicios/{servicio['id']}",
+            json={"nombre": "Incompleto"},
             headers=cabecera(token_empleado),
         )
     ).status_code == 422
@@ -165,7 +170,8 @@ async def test_servicio_put_y_patch(client, servicio, token_empleado):
     assert completo.status_code == 200 and completo.json()["activo"] is False
 
     parcial = await client.patch(
-        f"/api/servicios/{servicio['id']}", json={"precio": 123000},
+        f"/api/servicios/{servicio['id']}",
+        json={"precio": 123000},
         headers=cabecera(token_empleado),
     )
     assert parcial.json()["precio"] == 123000

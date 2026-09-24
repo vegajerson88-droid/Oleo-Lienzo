@@ -3,6 +3,7 @@
 Todos los indicadores y series se calculan en la base de datos. El frontend
 solo los dibuja: no escribe ni un número a mano.
 """
+
 from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -100,15 +101,18 @@ async def obtener_dashboard(
         variacion = await estadisticas.variacion_ingresos(db)
         graficos = [
             _serie(
-                "Ventas por día", "linea",
+                "Ventas por día",
+                "linea",
                 await estadisticas.serie_ventas_por_dia(db, fecha_inicio, fecha_fin),
             ),
             _serie(
-                "Ventas por estado", "barras",
+                "Ventas por estado",
+                "barras",
                 await estadisticas.serie_ventas_por_estado(db, fecha_inicio, fecha_fin),
             ),
             _serie(
-                "Productos y servicios más vendidos", "barras",
+                "Productos y servicios más vendidos",
+                "barras",
                 await estadisticas.top_productos(db, fecha_inicio, fecha_fin),
             ),
             _serie("PQR por estado", "barras", await estadisticas.serie_pqr_por_estado(db)),
@@ -119,11 +123,13 @@ async def obtener_dashboard(
         datos = await estadisticas.indicadores_empleado(db, fecha_inicio, fecha_fin)
         graficos = [
             _serie(
-                "Ventas por día", "linea",
+                "Ventas por día",
+                "linea",
                 await estadisticas.serie_ventas_por_dia(db, fecha_inicio, fecha_fin),
             ),
             _serie(
-                "Productos y servicios más vendidos", "barras",
+                "Productos y servicios más vendidos",
+                "barras",
                 await estadisticas.top_productos(db, fecha_inicio, fecha_fin),
             ),
         ]
@@ -133,7 +139,8 @@ async def obtener_dashboard(
         datos = await estadisticas.indicadores_cliente(db, usuario.id)
         graficos = [
             _serie(
-                "Mis compras por día", "linea",
+                "Mis compras por día",
+                "linea",
                 await estadisticas.serie_ventas_por_dia(
                     db, fecha_inicio, fecha_fin, cliente_id=usuario.id
                 ),

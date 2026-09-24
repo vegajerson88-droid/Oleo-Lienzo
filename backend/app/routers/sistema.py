@@ -1,4 +1,5 @@
 """Diagnóstico y estado del sistema."""
+
 import time
 
 from fastapi import APIRouter, Depends, Request
@@ -10,7 +11,6 @@ from app.database import get_db
 from app.dependencies.auth import solo_admin
 from app.dependencies.common import RESPUESTAS_AUTH
 from app.services import chatbot as chatbot_service
-from app.services import email as email_service
 from app.services import pagos as pagos_service
 
 router = APIRouter(prefix="/sistema", tags=["Sistema"])
@@ -63,8 +63,10 @@ async def _check_ia_externa() -> dict:
     """Llama de verdad a Groq: no se limita a mirar si hay una clave escrita."""
     inicio = time.perf_counter()
     resultado = await chatbot_service.comprobar_disponibilidad()
-    estado = "ok" if resultado["disponible"] else (
-        "no_configurado" if not settings.groq_configurado else "error"
+    estado = (
+        "ok"
+        if resultado["disponible"]
+        else ("no_configurado" if not settings.groq_configurado else "error")
     )
     return {"estado": estado, "latencia_ms": _medir(inicio), "detalle": resultado["detalle"]}
 
@@ -72,8 +74,10 @@ async def _check_ia_externa() -> dict:
 async def _check_stripe() -> dict:
     inicio = time.perf_counter()
     resultado = await pagos_service.comprobar_disponibilidad()
-    estado = "ok" if resultado["disponible"] else (
-        "no_configurado" if not settings.stripe_configurado else "error"
+    estado = (
+        "ok"
+        if resultado["disponible"]
+        else ("no_configurado" if not settings.stripe_configurado else "error")
     )
     return {"estado": estado, "latencia_ms": _medir(inicio), "detalle": resultado["detalle"]}
 

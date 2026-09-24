@@ -3,6 +3,7 @@
 Se persisten para poder darle memoria al asistente dentro de una misma
 conversación y para que el administrador pueda auditar qué se respondió.
 """
+
 import enum
 
 from sqlalchemy import Enum, ForeignKey, String, Text

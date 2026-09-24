@@ -1,4 +1,5 @@
 """Esquemas de obras (el catálogo de productos)."""
+
 from datetime import date, datetime
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -31,10 +32,15 @@ class ObraCreate(ObraBase):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "titulo": "Amanecer en el Valle", "artista": "Marina Solórzano",
-                "anio": 2021, "tecnica": "Óleo sobre lienzo", "precio": 1250000,
+                "titulo": "Amanecer en el Valle",
+                "artista": "Marina Solórzano",
+                "anio": 2021,
+                "tecnica": "Óleo sobre lienzo",
+                "precio": 1250000,
                 "descripcion": "Pinceladas cálidas que capturan la luz del primer sol.",
-                "imagen_url": None, "disponible": True, "stock": 1,
+                "imagen_url": None,
+                "disponible": True,
+                "stock": 1,
             }
         }
     )

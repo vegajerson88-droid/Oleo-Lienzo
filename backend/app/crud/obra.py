@@ -1,4 +1,5 @@
 """Operaciones de base de datos sobre las obras del catálogo."""
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 

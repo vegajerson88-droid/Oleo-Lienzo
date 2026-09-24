@@ -1,4 +1,5 @@
 """Usuarios del sistema (administradores, empleados y clientes)."""
+
 from sqlalchemy import Boolean, ForeignKey, Index, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -27,9 +28,7 @@ class Usuario(TimestampMixin, Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     activo: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
-    rol_id: Mapped[int] = mapped_column(
-        ForeignKey("roles.id", ondelete="RESTRICT"), nullable=False
-    )
+    rol_id: Mapped[int] = mapped_column(ForeignKey("roles.id", ondelete="RESTRICT"), nullable=False)
     rol: Mapped["Rol"] = relationship(back_populates="usuarios", lazy="joined")
 
     pedidos: Mapped[list["Pedido"]] = relationship(

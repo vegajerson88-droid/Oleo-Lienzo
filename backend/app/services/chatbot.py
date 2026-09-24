@@ -8,6 +8,7 @@ degrada a un modo de respaldo basado en reglas: responde lo esencial con datos
 reales del catálogo y lo declara abiertamente (`generado_por_ia: false`) en
 lugar de fingir que la IA contestó.
 """
+
 from __future__ import annotations
 
 import logging
@@ -62,7 +63,10 @@ async def construir_contexto_catalogo(db: AsyncSession) -> str:
     obras = list(
         (
             await db.execute(
-                select(Obra).where(Obra.disponible.is_(True)).order_by(Obra.id).limit(MAX_OBRAS_CONTEXTO)
+                select(Obra)
+                .where(Obra.disponible.is_(True))
+                .order_by(Obra.id)
+                .limit(MAX_OBRAS_CONTEXTO)
             )
         )
         .scalars()
@@ -94,9 +98,7 @@ def _a_mensajes_api(historial: list[Mensaje]) -> list[dict]:
         RolMensaje.asistente: "assistant",
         RolMensaje.sistema: "system",
     }
-    return [
-        {"role": equivalencias.get(m.rol, "user"), "content": m.contenido} for m in historial
-    ]
+    return [{"role": equivalencias.get(m.rol, "user"), "content": m.contenido} for m in historial]
 
 
 # ── Respaldo sin IA ──────────────────────────────────────────────────────
@@ -174,9 +176,7 @@ def responder_sin_ia(mensaje: str, catalogo: str) -> str:
 
 
 # ── Llamada a Groq ───────────────────────────────────────────────────────
-async def generar_respuesta(
-    mensaje_usuario: str, historial: list[Mensaje], catalogo: str
-) -> dict:
+async def generar_respuesta(mensaje_usuario: str, historial: list[Mensaje], catalogo: str) -> dict:
     """Genera la respuesta del asistente.
 
     Devuelve siempre un dict con `respuesta`, `generado_por_ia`, `modelo` y

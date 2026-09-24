@@ -3,6 +3,7 @@
 Cubren las reglas de negocio que no son un CRUD: máquinas de estado,
 inventario, cálculo del IVA y aislamiento entre clientes.
 """
+
 import pytest
 
 from tests.conftest import cabecera
@@ -56,7 +57,8 @@ async def test_linea_debe_ser_obra_o_servicio_no_ambos(client, obra, servicio, t
 
 async def test_solo_el_cliente_crea_pedidos_403(client, obra, token_empleado):
     resp = await client.post(
-        "/api/pedidos", json={"detalles": [{"obra_id": obra["id"], "cantidad": 1}]},
+        "/api/pedidos",
+        json={"detalles": [{"obra_id": obra["id"], "cantidad": 1}]},
         headers=cabecera(token_empleado),
     )
     assert resp.status_code == 403
@@ -77,7 +79,8 @@ async def test_el_pedido_reserva_inventario(client, obra, token_cliente):
 
 async def test_obra_no_disponible_no_se_puede_pedir(client, obra, token_empleado, token_cliente):
     await client.patch(
-        f"/api/productos/{obra['id']}", json={"disponible": False},
+        f"/api/productos/{obra['id']}",
+        json={"disponible": False},
         headers=cabecera(token_empleado),
     )
     resp = await _crear_pedido(client, token_cliente, obra["id"])
@@ -95,7 +98,8 @@ async def test_transiciones_invalidas_desde_pendiente_422(
 ):
     pedido = (await _crear_pedido(client, token_cliente, obra["id"])).json()
     resp = await client.patch(
-        f"/api/pedidos/{pedido['id']}/estado", json={"nuevo_estado": estado_invalido},
+        f"/api/pedidos/{pedido['id']}/estado",
+        json={"nuevo_estado": estado_invalido},
         headers=cabecera(token_admin),
     )
     assert resp.status_code == 422
@@ -106,20 +110,23 @@ async def test_ciclo_completo_del_pedido(client, obra, token_cliente, token_admi
     cabeceras = cabecera(token_admin)
 
     confirmado = await client.patch(
-        f"/api/pedidos/{pedido['id']}/estado", json={"nuevo_estado": "confirmado"},
+        f"/api/pedidos/{pedido['id']}/estado",
+        json={"nuevo_estado": "confirmado"},
         headers=cabeceras,
     )
     assert confirmado.json()["estado"] == "confirmado"
 
     entregado = await client.patch(
-        f"/api/pedidos/{pedido['id']}/estado", json={"nuevo_estado": "entregado"},
+        f"/api/pedidos/{pedido['id']}/estado",
+        json={"nuevo_estado": "entregado"},
         headers=cabeceras,
     )
     assert entregado.json()["estado"] == "entregado"
 
     # Entregado es un estado final.
     final = await client.patch(
-        f"/api/pedidos/{pedido['id']}/estado", json={"nuevo_estado": "cancelado"},
+        f"/api/pedidos/{pedido['id']}/estado",
+        json={"nuevo_estado": "cancelado"},
         headers=cabeceras,
     )
     assert final.status_code == 422
@@ -130,7 +137,8 @@ async def test_cancelar_devuelve_el_inventario(client, obra, token_cliente, toke
     assert (await client.get(f"/api/productos/{obra['id']}")).json()["stock"] == 3
 
     await client.patch(
-        f"/api/pedidos/{pedido['id']}/estado", json={"nuevo_estado": "cancelado"},
+        f"/api/pedidos/{pedido['id']}/estado",
+        json={"nuevo_estado": "cancelado"},
         headers=cabecera(token_admin),
     )
     assert (await client.get(f"/api/productos/{obra['id']}")).json()["stock"] == 5
@@ -142,10 +150,15 @@ async def test_un_cliente_no_ve_el_pedido_de_otro_403(client, obra, token_client
     registro = await client.post(
         "/api/auth/registro",
         json={
-            "nombre": "Otro", "apellido": "Cliente", "tipo_documento": "CC",
-            "numero_documento": "55555555", "direccion": "Calle X 12-34",
-            "telefono": "3005555555", "email": "otro@test.com",
-            "password": "Clave1234", "confirmar_password": "Clave1234",
+            "nombre": "Otro",
+            "apellido": "Cliente",
+            "tipo_documento": "CC",
+            "numero_documento": "55555555",
+            "direccion": "Calle X 12-34",
+            "telefono": "3005555555",
+            "email": "otro@test.com",
+            "password": "Clave1234",
+            "confirmar_password": "Clave1234",
         },
     )
     assert registro.status_code == 201
@@ -163,7 +176,8 @@ async def test_un_cliente_no_ve_el_pedido_de_otro_403(client, obra, token_client
 async def test_confirmar_pedido_genera_la_venta(client, obra, token_cliente, token_admin):
     pedido = (await _crear_pedido(client, token_cliente, obra["id"], cantidad=2)).json()
     await client.patch(
-        f"/api/pedidos/{pedido['id']}/estado", json={"nuevo_estado": "confirmado"},
+        f"/api/pedidos/{pedido['id']}/estado",
+        json={"nuevo_estado": "confirmado"},
         headers=cabecera(token_admin),
     )
 
@@ -175,7 +189,9 @@ async def test_confirmar_pedido_genera_la_venta(client, obra, token_cliente, tok
     assert venta["numero"].startswith("V-")
     # El IVA se calcula sobre la base gravable, no sobre el bruto.
     assert venta["impuestos"] == pytest.approx((venta["subtotal"] - venta["descuento"]) * IVA)
-    assert venta["total"] == pytest.approx(venta["subtotal"] - venta["descuento"] + venta["impuestos"])
+    assert venta["total"] == pytest.approx(
+        venta["subtotal"] - venta["descuento"] + venta["impuestos"]
+    )
 
 
 # ── Ventas ───────────────────────────────────────────────────────────────
@@ -248,7 +264,8 @@ async def test_venta_pagada_no_se_anula_sino_que_se_reembolsa(
     assert anular.status_code == 422
 
     reembolso = await client.patch(
-        f"/api/ventas/{venta['id']}/estado", json={"nuevo_estado": "reembolsada"},
+        f"/api/ventas/{venta['id']}/estado",
+        json={"nuevo_estado": "reembolsada"},
         headers=cabeceras,
     )
     assert reembolso.json()["estado"] == "reembolsada"
@@ -265,7 +282,8 @@ async def test_anular_una_venta_devuelve_el_inventario(client, obra, token_admin
     assert (await client.get(f"/api/productos/{obra['id']}")).json()["stock"] == 3
 
     await client.patch(
-        f"/api/ventas/{venta['id']}/estado", json={"nuevo_estado": "anulada"},
+        f"/api/ventas/{venta['id']}/estado",
+        json={"nuevo_estado": "anulada"},
         headers=cabecera(token_admin),
     )
     assert (await client.get(f"/api/productos/{obra['id']}")).json()["stock"] == 5
@@ -298,7 +316,9 @@ async def test_historial_con_filtros(client, obra, token_admin, id_cliente):
     assert rango_invertido.status_code == 422
 
 
-async def test_el_cliente_solo_ve_sus_propias_ventas(client, obra, token_admin, token_cliente, id_cliente):
+async def test_el_cliente_solo_ve_sus_propias_ventas(
+    client, obra, token_admin, token_cliente, id_cliente
+):
     await client.post(
         "/api/ventas",
         json={"cliente_id": id_cliente, "detalles": [{"obra_id": obra["id"], "cantidad": 1}]},
@@ -350,7 +370,8 @@ async def test_una_venta_solo_se_factura_una_vez_409(client, obra, token_admin, 
 async def test_no_se_factura_una_venta_anulada_422(client, obra, token_admin, id_cliente):
     venta = await _venta_para_facturar(client, obra, token_admin, id_cliente)
     await client.patch(
-        f"/api/ventas/{venta['id']}/estado", json={"nuevo_estado": "anulada"},
+        f"/api/ventas/{venta['id']}/estado",
+        json={"nuevo_estado": "anulada"},
         headers=cabecera(token_admin),
     )
     resp = await client.post(
@@ -374,9 +395,7 @@ async def test_descargar_la_factura_en_pdf(client, obra, token_admin, id_cliente
         )
     ).json()
 
-    resp = await client.get(
-        f"/api/facturas/{factura['id']}/pdf", headers=cabecera(token_admin)
-    )
+    resp = await client.get(f"/api/facturas/{factura['id']}/pdf", headers=cabecera(token_admin))
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/pdf"
     assert resp.content.startswith(b"%PDF")  # es un PDF de verdad
@@ -412,20 +431,23 @@ async def test_transiciones_de_la_factura(client, obra, token_admin, id_cliente)
     cabeceras = cabecera(token_admin)
 
     pagada = await client.patch(
-        f"/api/facturas/{factura['id']}/estado", json={"nuevo_estado": "pagada"},
+        f"/api/facturas/{factura['id']}/estado",
+        json={"nuevo_estado": "pagada"},
         headers=cabeceras,
     )
     assert pagada.json()["estado"] == "pagada"
 
     anulada = await client.patch(
-        f"/api/facturas/{factura['id']}/estado", json={"nuevo_estado": "anulada"},
+        f"/api/facturas/{factura['id']}/estado",
+        json={"nuevo_estado": "anulada"},
         headers=cabeceras,
     )
     assert anulada.json()["estado"] == "anulada"
 
     # Anulada es un estado final.
     final = await client.patch(
-        f"/api/facturas/{factura['id']}/estado", json={"nuevo_estado": "pagada"},
+        f"/api/facturas/{factura['id']}/estado",
+        json={"nuevo_estado": "pagada"},
         headers=cabeceras,
     )
     assert final.status_code == 422

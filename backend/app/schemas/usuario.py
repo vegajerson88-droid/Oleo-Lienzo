@@ -3,6 +3,7 @@
 Las mismas reglas que valida el formulario de React se revalidan aquí: el
 frontend puede saltarse, el backend no.
 """
+
 import re
 from datetime import datetime
 
@@ -77,10 +78,15 @@ class UsuarioCreate(UsuarioBase):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "nombre": "Sara", "apellido": "Pérez", "tipo_documento": "CC",
-                "numero_documento": "1098765432", "direccion": "Calle 45 # 12-30",
-                "telefono": "3009876543", "email": "sara.perez@ejemplo.com",
-                "password": "Cliente123", "confirmar_password": "Cliente123",
+                "nombre": "Sara",
+                "apellido": "Pérez",
+                "tipo_documento": "CC",
+                "numero_documento": "1098765432",
+                "direccion": "Calle 45 # 12-30",
+                "telefono": "3009876543",
+                "email": "sara.perez@ejemplo.com",
+                "password": "Cliente123",
+                "confirmar_password": "Cliente123",
             }
         }
     )
@@ -136,9 +142,7 @@ class UsuarioReplace(BaseModel):
     rol_id: int = Field(ge=1)
     activo: bool
 
-    _val_letras = field_validator("nombre", "apellido")(
-        UsuarioBase.validar_solo_letras.__func__
-    )
+    _val_letras = field_validator("nombre", "apellido")(UsuarioBase.validar_solo_letras.__func__)
     _val_numeros = field_validator("telefono")(UsuarioBase.validar_solo_numeros.__func__)
 
 
@@ -198,9 +202,7 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=64)
 
     model_config = ConfigDict(
-        json_schema_extra={
-            "example": {"email": "admin@oleoylienzo.com", "password": "Admin1234"}
-        }
+        json_schema_extra={"example": {"email": "admin@oleoylienzo.com", "password": "Admin1234"}}
     )
 
 
@@ -214,9 +216,7 @@ class TokenOut(BaseModel):
 class RecuperarPasswordRequest(BaseModel):
     email: EmailStr
 
-    model_config = ConfigDict(
-        json_schema_extra={"example": {"email": "sara.perez@ejemplo.com"}}
-    )
+    model_config = ConfigDict(json_schema_extra={"example": {"email": "sara.perez@ejemplo.com"}})
 
 
 class RestablecerPasswordRequest(BaseModel):

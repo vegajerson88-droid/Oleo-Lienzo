@@ -1,4 +1,5 @@
 """Pasarela de pago con Stripe: checkout y webhook."""
+
 import logging
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, HTTPException, Request, status
@@ -51,14 +52,12 @@ async def crear_checkout(
         raise HTTPException(status_code=exc.status_code, detail=exc.detail)
 
     if usuario.rol.nombre == "cliente" and venta.cliente_id != usuario.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail="Esta venta no es tuya."
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Esta venta no es tuya.")
     if venta.estado != EstadoVenta.pendiente_pago:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=f"La venta {venta.numero} está en estado '{venta.estado.value}' "
-                   "y no admite un pago nuevo.",
+            "y no admite un pago nuevo.",
         )
 
     try:

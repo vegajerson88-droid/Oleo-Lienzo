@@ -1,4 +1,5 @@
 """Esquemas del chatbot con Inteligencia Artificial."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -17,7 +18,8 @@ class MensajeOut(BaseModel):
 class ChatRequest(BaseModel):
     mensaje: str = Field(min_length=1, max_length=1000)
     session_id: str = Field(
-        min_length=8, max_length=64,
+        min_length=8,
+        max_length=64,
         description="Identificador de la conversación en el navegador.",
     )
 
@@ -37,9 +39,7 @@ class ChatResponse(BaseModel):
     # `false` cuando Groq no está configurado o falló y respondió el modo local.
     generado_por_ia: bool
     modelo: str | None = None
-    detalle: str | None = Field(
-        default=None, description="Motivo de la degradación, si la hubo."
-    )
+    detalle: str | None = Field(default=None, description="Motivo de la degradación, si la hubo.")
 
 
 class ConversacionOut(BaseModel):

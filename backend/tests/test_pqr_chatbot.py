@@ -1,4 +1,5 @@
 """Pruebas del módulo de PQR y del chatbot con IA."""
+
 import pytest
 
 from tests.conftest import cabecera
@@ -29,7 +30,8 @@ async def test_radicar_pqr_sin_sesion_exige_datos_de_contacto(client):
     con_contacto = await client.post(
         "/api/pqr",
         json={
-            **PQR_VALIDA, "contacto_nombre": "Visitante Anonimo",
+            **PQR_VALIDA,
+            "contacto_nombre": "Visitante Anonimo",
             "contacto_email": "visitante@test.com",
         },
     )
@@ -60,9 +62,7 @@ async def test_mensaje_demasiado_corto_422(client, token_cliente):
 
 
 async def test_responder_una_pqr(client, token_cliente, token_empleado):
-    pqr = (
-        await client.post("/api/pqr", json=PQR_VALIDA, headers=cabecera(token_cliente))
-    ).json()
+    pqr = (await client.post("/api/pqr", json=PQR_VALIDA, headers=cabecera(token_cliente))).json()
 
     resp = await client.post(
         f"/api/pqr/{pqr['id']}/responder",
@@ -77,9 +77,7 @@ async def test_responder_una_pqr(client, token_cliente, token_empleado):
 
 
 async def test_el_cliente_no_puede_responder_su_propia_pqr_403(client, token_cliente):
-    pqr = (
-        await client.post("/api/pqr", json=PQR_VALIDA, headers=cabecera(token_cliente))
-    ).json()
+    pqr = (await client.post("/api/pqr", json=PQR_VALIDA, headers=cabecera(token_cliente))).json()
     resp = await client.post(
         f"/api/pqr/{pqr['id']}/responder",
         json={"respuesta": "Intento de auto-responderme la solicitud."},
@@ -89,20 +87,17 @@ async def test_el_cliente_no_puede_responder_su_propia_pqr_403(client, token_cli
 
 
 async def test_no_se_marca_respondida_sin_respuesta_422(client, token_cliente, token_admin):
-    pqr = (
-        await client.post("/api/pqr", json=PQR_VALIDA, headers=cabecera(token_cliente))
-    ).json()
+    pqr = (await client.post("/api/pqr", json=PQR_VALIDA, headers=cabecera(token_cliente))).json()
     resp = await client.patch(
-        f"/api/pqr/{pqr['id']}/estado", json={"nuevo_estado": "respondida"},
+        f"/api/pqr/{pqr['id']}/estado",
+        json={"nuevo_estado": "respondida"},
         headers=cabecera(token_admin),
     )
     assert resp.status_code == 422
 
 
 async def test_una_pqr_cerrada_es_final(client, token_cliente, token_admin):
-    pqr = (
-        await client.post("/api/pqr", json=PQR_VALIDA, headers=cabecera(token_cliente))
-    ).json()
+    pqr = (await client.post("/api/pqr", json=PQR_VALIDA, headers=cabecera(token_cliente))).json()
     cabeceras = cabecera(token_admin)
 
     cerrada = await client.patch(

@@ -1,4 +1,5 @@
 """Pruebas de reportes, dashboards, diagnóstico del sistema, IA y pagos."""
+
 import pytest
 
 from tests.conftest import cabecera
@@ -44,9 +45,7 @@ async def test_reporte_de_un_dia_sin_ventas(client, token_admin):
 
 async def test_exportar_el_reporte_a_pdf(client, obra, token_admin, id_cliente):
     await _venta(client, token_admin, obra, id_cliente)
-    resp = await client.get(
-        "/api/reportes/ventas-diarias/pdf", headers=cabecera(token_admin)
-    )
+    resp = await client.get("/api/reportes/ventas-diarias/pdf", headers=cabecera(token_admin))
     assert resp.status_code == 200
     assert resp.headers["content-type"] == "application/pdf"
     assert resp.content.startswith(b"%PDF")
@@ -55,9 +54,7 @@ async def test_exportar_el_reporte_a_pdf(client, obra, token_admin, id_cliente):
 
 async def test_exportar_el_reporte_a_excel(client, obra, token_admin, id_cliente):
     await _venta(client, token_admin, obra, id_cliente)
-    resp = await client.get(
-        "/api/reportes/ventas-diarias/excel", headers=cabecera(token_admin)
-    )
+    resp = await client.get("/api/reportes/ventas-diarias/excel", headers=cabecera(token_admin))
     assert resp.status_code == 200
     assert resp.headers["content-type"] == TIPO_EXCEL
     # Un .xlsx es un ZIP: debe empezar por su firma.
@@ -70,14 +67,12 @@ async def test_el_excel_se_abre_y_trae_las_dos_hojas(client, obra, token_admin, 
     import openpyxl
 
     await _venta(client, token_admin, obra, id_cliente)
-    resp = await client.get(
-        "/api/reportes/ventas-diarias/excel", headers=cabecera(token_admin)
-    )
+    resp = await client.get("/api/reportes/ventas-diarias/excel", headers=cabecera(token_admin))
     libro = openpyxl.load_workbook(io.BytesIO(resp.content))
     assert libro.sheetnames == ["Ventas", "Resumen"]
     hoja = libro["Ventas"]
-    assert hoja.auto_filter.ref is not None      # filtros activos
-    assert hoja.freeze_panes is not None         # cabecera congelada
+    assert hoja.auto_filter.ref is not None  # filtros activos
+    assert hoja.freeze_panes is not None  # cabecera congelada
 
 
 async def test_los_reportes_son_solo_para_admin_y_empleado(client, token_cliente):
@@ -118,7 +113,11 @@ async def test_el_cliente_solo_ve_su_propia_actividad(client, token_cliente):
     assert data["rol"] == "cliente"
     claves = {i["clave"] for i in data["indicadores"]}
     assert claves == {
-        "mis_pedidos", "mis_compras", "total_invertido", "mis_facturas", "mis_pqr_abiertas"
+        "mis_pedidos",
+        "mis_compras",
+        "total_invertido",
+        "mis_facturas",
+        "mis_pqr_abiertas",
     }
 
 
@@ -130,9 +129,9 @@ async def test_el_dashboard_calcula_los_datos_en_la_base(client, obra, token_adm
     await _venta(client, token_admin, obra, id_cliente)
 
     despues = (await client.get("/api/dashboard", headers=cabecera(token_admin))).json()
-    ventas_despues = next(
-        i for i in despues["indicadores"] if i["clave"] == "total_ventas"
-    )["valor"]
+    ventas_despues = next(i for i in despues["indicadores"] if i["clave"] == "total_ventas")[
+        "valor"
+    ]
     assert ventas_despues == ventas_antes + 1
 
 

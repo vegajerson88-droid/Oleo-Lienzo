@@ -1,5 +1,6 @@
 """Chatbot de atención al cliente con Inteligencia Artificial."""
-from fastapi import APIRouter, Depends, HTTPException, status
+
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import DomainError
@@ -51,9 +52,7 @@ async def enviar_mensaje(
 
     await chat_crud.agregar_mensaje(db, conversacion, RolMensaje.usuario, data.mensaje)
     resultado = await chatbot_service.generar_respuesta(data.mensaje, historial, catalogo)
-    await chat_crud.agregar_mensaje(
-        db, conversacion, RolMensaje.asistente, resultado["respuesta"]
-    )
+    await chat_crud.agregar_mensaje(db, conversacion, RolMensaje.asistente, resultado["respuesta"])
 
     return ChatResponse(conversacion_id=conversacion.id, **resultado)
 
@@ -63,8 +62,7 @@ async def enviar_mensaje(
     response_model=Page[ConversacionOut],
     summary="Listar conversaciones (auditoría)",
     description=(
-        "Permite al administrador revisar qué se le ha preguntado al "
-        "asistente y qué respondió."
+        "Permite al administrador revisar qué se le ha preguntado al asistente y qué respondió."
     ),
     responses=RESPUESTAS_AUTH,
 )

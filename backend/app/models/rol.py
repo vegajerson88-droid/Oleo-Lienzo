@@ -4,6 +4,7 @@ Un rol agrupa permisos; un permiso es una acción concreta identificada por un
 código estable (por ejemplo `ventas.crear`). La autorización definitiva la
 resuelve siempre el backend a partir de estos datos.
 """
+
 from sqlalchemy import Column, ForeignKey, String, Table
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -25,9 +26,7 @@ class Permiso(Base):
     codigo: Mapped[str] = mapped_column(String(60), unique=True, index=True, nullable=False)
     descripcion: Mapped[str] = mapped_column(String(160), nullable=False)
 
-    roles: Mapped[list["Rol"]] = relationship(
-        secondary=rol_permisos, back_populates="permisos"
-    )
+    roles: Mapped[list["Rol"]] = relationship(secondary=rol_permisos, back_populates="permisos")
 
     def __repr__(self) -> str:
         return f"<Permiso {self.codigo}>"

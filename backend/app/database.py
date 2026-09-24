@@ -7,6 +7,7 @@ El driver es psycopg 3 en modo asíncrono. Las pruebas automatizadas usan
 SQLite en memoria, por eso el motor detecta el dialecto y solo aplica las
 opciones de pool cuando la base lo soporta.
 """
+
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine

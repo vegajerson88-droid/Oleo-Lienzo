@@ -9,6 +9,7 @@ expiración toca nuestra base de datos.
 Las claves viven en variables de entorno; la publicable es la única que se
 expone al navegador, que es precisamente para lo que existe.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -28,8 +29,22 @@ if settings.stripe_secret_key:
 
 # Monedas que Stripe maneja sin decimales: el importe va en unidades enteras.
 MONEDAS_SIN_DECIMALES = {
-    "bif", "clp", "djf", "gnf", "jpy", "kmf", "krw", "mga",
-    "pyg", "rwf", "ugx", "vnd", "vuv", "xaf", "xof", "xpf",
+    "bif",
+    "clp",
+    "djf",
+    "gnf",
+    "jpy",
+    "kmf",
+    "krw",
+    "mga",
+    "pyg",
+    "rwf",
+    "ugx",
+    "vnd",
+    "vuv",
+    "xaf",
+    "xof",
+    "xpf",
 }
 
 
@@ -96,19 +111,18 @@ async def crear_sesion_checkout(venta, exito_url: str, cancelado_url: str) -> di
     """Crea la sesión de pago y devuelve la URL alojada por Stripe."""
     if not settings.stripe_configurado:
         raise BusinessRuleError(
-            "La pasarela de pago no está configurada. "
-            "Define STRIPE_SECRET_KEY en el archivo .env."
+            "La pasarela de pago no está configurada. Define STRIPE_SECRET_KEY en el archivo .env."
         )
     if not venta.detalles:
         raise BusinessRuleError("La venta no tiene líneas que cobrar.")
 
     try:
-        sesion = await asyncio.to_thread(
-            _crear_sesion_sincrona, venta, exito_url, cancelado_url
-        )
+        sesion = await asyncio.to_thread(_crear_sesion_sincrona, venta, exito_url, cancelado_url)
     except stripe.StripeError as exc:
         logger.warning("Stripe rechazó la creación de la sesión: %s", exc)
-        raise BusinessRuleError(f"Stripe no pudo crear la sesión de pago: {exc.user_message or exc}")
+        raise BusinessRuleError(
+            f"Stripe no pudo crear la sesión de pago: {exc.user_message or exc}"
+        )
 
     return {
         "checkout_url": sesion.url,
@@ -130,9 +144,7 @@ def verificar_evento_webhook(payload: bytes, firma: str | None) -> stripe.Event:
     if not firma:
         raise BusinessRuleError("Falta la cabecera Stripe-Signature.")
     try:
-        return stripe.Webhook.construct_event(
-            payload, firma, settings.stripe_webhook_secret
-        )
+        return stripe.Webhook.construct_event(payload, firma, settings.stripe_webhook_secret)
     except ValueError:
         raise BusinessRuleError("El cuerpo del webhook no es un JSON válido.")
     except stripe.SignatureVerificationError:

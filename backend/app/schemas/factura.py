@@ -1,4 +1,5 @@
 """Esquemas de facturación."""
+
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -13,9 +14,7 @@ class FacturaCreate(BaseModel):
     venta_id: int = Field(ge=1)
     observaciones: str | None = Field(default=None, max_length=500)
 
-    model_config = ConfigDict(
-        json_schema_extra={"example": {"venta_id": 1, "observaciones": None}}
-    )
+    model_config = ConfigDict(json_schema_extra={"example": {"venta_id": 1, "observaciones": None}})
 
 
 class FacturaCambioEstado(BaseModel):

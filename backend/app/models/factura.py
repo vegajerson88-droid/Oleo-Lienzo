@@ -3,6 +3,7 @@
 La factura es un documento congelado: copia los importes de la venta en el
 momento de emitirse y ya no cambia aunque la venta se edite después.
 """
+
 import enum
 from datetime import datetime
 

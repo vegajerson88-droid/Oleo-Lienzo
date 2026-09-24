@@ -1,4 +1,5 @@
 """Líneas de una venta: qué obra o servicio se vendió, cuánto y a qué precio."""
+
 from sqlalchemy import CheckConstraint, ForeignKey, Integer, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

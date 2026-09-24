@@ -4,6 +4,7 @@ Ninguna credencial vive en el código: todo valor sensible se define en `.env`
 (ver `.env.example`). Los valores por defecto que aparecen aquí son seguros
 para desarrollo y nunca contienen secretos reales.
 """
+
 from decimal import Decimal
 from functools import lru_cache
 

@@ -7,6 +7,7 @@ bloque de totales y pie de página numerado.
 Los PDF se construyen en memoria (BytesIO) y se devuelven como bytes; no se
 escribe nada en disco.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -70,7 +71,8 @@ def _cabecera(c: canvas.Canvas, ancho: float, alto: float, titulo: str) -> float
     c.drawString(34 * mm, tope + 15 * mm, settings.empresa_nombre)
     c.drawString(34 * mm, tope + 11 * mm, f"NIT {settings.empresa_nit}")
     c.drawString(
-        34 * mm, tope + 7 * mm,
+        34 * mm,
+        tope + 7 * mm,
         f"{settings.empresa_direccion} · {settings.empresa_ciudad}",
     )
 
@@ -108,8 +110,9 @@ def _etiqueta_estado(c: canvas.Canvas, x: float, y: float, estado: str) -> None:
     c.drawCentredString(x - ancho_caja / 2, y + 1.5, texto)
 
 
-def _bloque_datos(c: canvas.Canvas, x: float, y: float, titulo: str, lineas: list[str],
-                  ancho: float) -> float:
+def _bloque_datos(
+    c: canvas.Canvas, x: float, y: float, titulo: str, lineas: list[str], ancho: float
+) -> float:
     """Recuadro con un encabezado dorado y una lista de datos."""
     alto = 9 * mm + len(lineas) * 4.6 * mm
     c.setFillColor(FRANJA)
@@ -155,7 +158,10 @@ def generar_factura_pdf(factura) -> bytes:
     y_bloques = y - 24 * mm
     mitad = (ancho - 36 * mm) / 2
     _bloque_datos(
-        c, 16 * mm, y_bloques, "Facturar a",
+        c,
+        16 * mm,
+        y_bloques,
+        "Facturar a",
         [
             factura.cliente_nombre,
             factura.cliente_documento,
@@ -166,12 +172,15 @@ def generar_factura_pdf(factura) -> bytes:
         mitad - 2 * mm,
     )
     y_cursor = _bloque_datos(
-        c, 16 * mm + mitad + 4 * mm, y_bloques, "Condiciones",
+        c,
+        16 * mm + mitad + 4 * mm,
+        y_bloques,
+        "Condiciones",
         [
             f"Método de pago: {factura.venta.metodo_pago.value.capitalize()}",
             f"Estado de la venta: {factura.venta.estado.value.replace('_', ' ')}",
             f"IVA aplicado: {float(factura.iva_porcentaje):g}%",
-            f"Moneda: Peso colombiano (COP)",
+            "Moneda: Peso colombiano (COP)",
             f"Emitida por: {settings.empresa_nombre}",
         ],
         mitad - 2 * mm,
@@ -236,8 +245,15 @@ def generar_factura_pdf(factura) -> bytes:
     y_totales -= 8 * mm
 
     c.setFillColor(VERDE)
-    c.roundRect(x_totales - 4 * mm, y_totales - 3 * mm, ancho - 12 * mm - x_totales,
-                10 * mm, 2, stroke=0, fill=1)
+    c.roundRect(
+        x_totales - 4 * mm,
+        y_totales - 3 * mm,
+        ancho - 12 * mm - x_totales,
+        10 * mm,
+        2,
+        stroke=0,
+        fill=1,
+    )
     c.setFillColor(PAPEL)
     c.setFont("Helvetica-Bold", 11)
     c.drawString(x_totales, y_totales + 0.6 * mm, "TOTAL A PAGAR")
@@ -251,7 +267,8 @@ def generar_factura_pdf(factura) -> bytes:
     c.setFillColor(GRIS)
     c.setFont("Helvetica", 7)
     c.drawString(
-        16 * mm, 22 * mm,
+        16 * mm,
+        22 * mm,
         "Documento generado electrónicamente. Conserva esta factura como soporte de tu compra.",
     )
     _pie(c, ancho, pagina, f"Factura {factura.numero} · {settings.empresa_nombre}")
@@ -309,8 +326,13 @@ def generar_reporte_ventas_pdf(ventas: list, dia) -> bytes:
     # Tabla
     y_tabla = y_res - 26 * mm
     cols = {
-        "numero": 16 * mm, "fecha": 48 * mm, "cliente": 80 * mm,
-        "items": 148 * mm, "cant": 216 * mm, "estado": 232 * mm, "total": ancho - 16 * mm,
+        "numero": 16 * mm,
+        "fecha": 48 * mm,
+        "cliente": 80 * mm,
+        "items": 148 * mm,
+        "cant": 216 * mm,
+        "estado": 232 * mm,
+        "total": ancho - 16 * mm,
     }
     c.setFillColor(VERDE)
     c.rect(16 * mm, y_tabla - 2 * mm, ancho - 32 * mm, 8 * mm, stroke=0, fill=1)
@@ -330,8 +352,7 @@ def generar_reporte_ventas_pdf(ventas: list, dia) -> bytes:
     if not ventas:
         c.setFillColor(GRIS)
         c.setFont("Helvetica-Oblique", 10)
-        c.drawCentredString(ancho / 2, fila - 6 * mm,
-                            f"No se registraron ventas el {fecha_texto}.")
+        c.drawCentredString(ancho / 2, fila - 6 * mm, f"No se registraron ventas el {fecha_texto}.")
     for indice, v in enumerate(ventas):
         if fila < 30 * mm:
             _pie(c, ancho, pagina, f"Reporte de ventas {fecha_texto} · continúa")

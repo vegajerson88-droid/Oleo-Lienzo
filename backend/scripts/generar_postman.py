@@ -5,6 +5,7 @@ desfasada cuando cambia un endpoint.
 
 Uso:  python scripts/generar_postman.py
 """
+
 import json
 import sys
 from pathlib import Path
@@ -13,24 +14,41 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from app.main import app  # noqa: E402
 
-DESTINO = Path(__file__).resolve().parent.parent.parent / "postman" / "Oleo-Lienzo.postman_collection.json"
+DESTINO = (
+    Path(__file__).resolve().parent.parent.parent
+    / "postman"
+    / "Oleo-Lienzo.postman_collection.json"
+)
 
 # Endpoints que no necesitan token.
 PUBLICOS = {
-    ("post", "/api/auth/registro"), ("post", "/api/auth/login"),
-    ("post", "/api/auth/token"), ("post", "/api/auth/recuperar-password"),
+    ("post", "/api/auth/registro"),
+    ("post", "/api/auth/login"),
+    ("post", "/api/auth/token"),
+    ("post", "/api/auth/recuperar-password"),
     ("post", "/api/auth/restablecer-password"),
-    ("get", "/api/productos"), ("get", "/api/productos/{obra_id}"),
-    ("get", "/api/servicios"), ("get", "/api/servicios/{servicio_id}"),
-    ("post", "/api/chatbot/mensaje"), ("post", "/api/pqr"),
-    ("get", "/api/pagos/configuracion"), ("get", "/api/sistema/salud"),
-    ("post", "/api/pagos/webhook"), ("get", "/"),
+    ("get", "/api/productos"),
+    ("get", "/api/productos/{obra_id}"),
+    ("get", "/api/servicios"),
+    ("get", "/api/servicios/{servicio_id}"),
+    ("post", "/api/chatbot/mensaje"),
+    ("post", "/api/pqr"),
+    ("get", "/api/pagos/configuracion"),
+    ("get", "/api/sistema/salud"),
+    ("post", "/api/pagos/webhook"),
+    ("get", "/"),
 }
 
 # Valores de ejemplo para los parámetros de ruta.
 EJEMPLOS_RUTA = {
-    "usuario_id": "1", "obra_id": "1", "servicio_id": "1", "pedido_id": "1",
-    "venta_id": "1", "factura_id": "1", "pqr_id": "1", "conversacion_id": "1",
+    "usuario_id": "1",
+    "obra_id": "1",
+    "servicio_id": "1",
+    "pedido_id": "1",
+    "venta_id": "1",
+    "factura_id": "1",
+    "pqr_id": "1",
+    "conversacion_id": "1",
 }
 
 
@@ -134,8 +152,11 @@ def construir() -> dict:
             cuerpo = cuerpo_de_ejemplo(operacion, componentes)
             if cuerpo is not None:
                 peticion["header"].append({"key": "Content-Type", "value": "application/json"})
-                peticion["body"] = {"mode": "raw", "raw": cuerpo,
-                                    "options": {"raw": {"language": "json"}}}
+                peticion["body"] = {
+                    "mode": "raw",
+                    "raw": cuerpo,
+                    "options": {"raw": {"language": "json"}},
+                }
 
             if requiere_token:
                 peticion["auth"] = {

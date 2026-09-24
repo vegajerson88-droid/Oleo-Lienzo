@@ -1,4 +1,5 @@
 """Autenticación: registro, inicio de sesión y gestión de la contraseña."""
+
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError

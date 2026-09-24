@@ -1,4 +1,5 @@
 """Radicación y gestión de PQR."""
+
 from datetime import datetime, timezone
 
 from sqlalchemy import or_, select
@@ -16,17 +17,13 @@ def _radicado(pqr_id: int) -> str:
 
 
 async def get_by_id(db: AsyncSession, pqr_id: int) -> PQR:
-    pqr = (
-        await db.execute(select(PQR).where(PQR.id == pqr_id))
-    ).unique().scalar_one_or_none()
+    pqr = (await db.execute(select(PQR).where(PQR.id == pqr_id))).unique().scalar_one_or_none()
     if not pqr:
         raise NotFoundError(f"PQR {pqr_id} no encontrada.")
     return pqr
 
 
-async def crear_pqr(
-    db: AsyncSession, data: PQRCreate, cliente: Usuario | None = None
-) -> PQR:
+async def crear_pqr(db: AsyncSession, data: PQRCreate, cliente: Usuario | None = None) -> PQR:
     """Radica una PQR. Si hay sesión iniciada, toma los datos del usuario."""
     if cliente is not None:
         nombre = f"{cliente.nombre} {cliente.apellido}"
@@ -75,8 +72,11 @@ async def list_pqr(
     if buscar:
         patron = f"%{buscar}%"
         query = query.where(
-            or_(PQR.radicado.ilike(patron), PQR.asunto.ilike(patron),
-                PQR.contacto_email.ilike(patron))
+            or_(
+                PQR.radicado.ilike(patron),
+                PQR.asunto.ilike(patron),
+                PQR.contacto_email.ilike(patron),
+            )
         )
     total = await contar(db, query)
     query = paginar(query.order_by(PQR.creado_en.desc(), PQR.id.desc()), page, page_size)

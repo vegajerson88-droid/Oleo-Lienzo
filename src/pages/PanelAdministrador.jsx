@@ -1,48 +1,63 @@
 import { useState } from "react";
-import { useAuth } from "../context/AuthContext";
-import ObrasManager from "./panel/ObrasManager";
-import ServiciosManager from "./panel/ServiciosManager";
-import PedidosManager from "./panel/PedidosManager";
-import UsuariosManager from "./panel/UsuariosManager";
-import Diagnostico from "./panel/Diagnostico";
+import {
+  Activity, BarChart3, Brush, FileText, MessageSquareWarning,
+  Package, ShoppingCart, Users,
+} from "lucide-react";
 
-const TABS = [
-  { id: "obras", label: "Obras" },
-  { id: "servicios", label: "Servicios" },
-  { id: "pedidos", label: "Pedidos" },
-  { id: "usuarios", label: "Usuarios" },
-  { id: "diagnostico", label: "Diagnóstico" },
+import { useAuth } from "../context/AuthContext";
+import PanelLayout from "./PanelLayout";
+import DashboardPanel from "./panel/DashboardPanel";
+import Diagnostico from "./panel/Diagnostico";
+import FacturasManager from "./panel/FacturasManager";
+import ObrasManager from "./panel/ObrasManager";
+import PedidosManager from "./panel/PedidosManager";
+import PqrManager from "./panel/PqrManager";
+import ReportesPanel from "./panel/ReportesPanel";
+import ServiciosManager from "./panel/ServiciosManager";
+import UsuariosManager from "./panel/UsuariosManager";
+import VentasManager from "./panel/VentasManager";
+
+const PESTANAS = [
+  { id: "dashboard", label: "Dashboard", icono: BarChart3 },
+  { id: "ventas", label: "Ventas", icono: ShoppingCart },
+  { id: "facturas", label: "Facturas", icono: FileText },
+  { id: "reportes", label: "Reportes", icono: FileText },
+  { id: "pedidos", label: "Pedidos", icono: Package },
+  { id: "obras", label: "Obras", icono: Brush },
+  { id: "servicios", label: "Servicios", icono: Package },
+  { id: "pqr", label: "PQR", icono: MessageSquareWarning },
+  { id: "usuarios", label: "Usuarios", icono: Users },
+  { id: "diagnostico", label: "Diagnóstico", icono: Activity },
 ];
 
+/** Panel del administrador: acceso completo a todos los módulos. */
 function PanelAdministrador() {
-  const { token, usuario } = useAuth();
-  const [tab, setTab] = useState("obras");
+  const { token } = useAuth();
+  const [pestana, setPestana] = useState("dashboard");
+
+  const vistas = {
+    dashboard: <DashboardPanel token={token} />,
+    ventas: <VentasManager token={token} />,
+    facturas: <FacturasManager token={token} puedeGestionar />,
+    reportes: <ReportesPanel token={token} />,
+    pedidos: <PedidosManager token={token} />,
+    obras: <ObrasManager token={token} puedeEliminar />,
+    servicios: <ServiciosManager token={token} puedeEliminar />,
+    pqr: <PqrManager token={token} puedeGestionar />,
+    usuarios: <UsuariosManager token={token} />,
+    diagnostico: <Diagnostico token={token} />,
+  };
 
   return (
-    <div className="container mx-auto max-w-6xl px-6 py-10">
-      <h1 className="font-display text-3xl mb-1">Panel de Administrador</h1>
-      <p className="text-sm text-ink/60 mb-8">Hola, {usuario?.nombre}. Control total de la galería.</p>
-
-      <div className="flex flex-wrap gap-2 mb-6 border-b border-ink/10">
-        {TABS.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => setTab(t.id)}
-            className={`font-mono text-xs uppercase tracking-wider px-4 py-3 border-b-2 transition-colors ${
-              tab === t.id ? "border-gold text-forest" : "border-transparent text-ink/50 hover:text-ink"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {tab === "obras" && <ObrasManager token={token} puedeEliminar={true} />}
-      {tab === "servicios" && <ServiciosManager token={token} puedeEliminar={true} />}
-      {tab === "pedidos" && <PedidosManager token={token} />}
-      {tab === "usuarios" && <UsuariosManager token={token} />}
-      {tab === "diagnostico" && <Diagnostico token={token} />}
-    </div>
+    <PanelLayout
+      titulo="Administración de la galería"
+      descripcion="Control total: catálogo, ventas, facturación, usuarios y estado del sistema."
+      pestanas={PESTANAS}
+      activa={pestana}
+      onCambiar={setPestana}
+    >
+      {vistas[pestana]}
+    </PanelLayout>
   );
 }
 

@@ -1,273 +1,245 @@
-import { useState, useEffect } from "react";
-import { X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CheckCircle2, UserPlus } from "lucide-react";
+
+import Modal from "./ui/Modal";
+import Alert from "./ui/Alert";
+import Button from "./ui/Button";
 import Input from "./ui/Input";
 import Select from "./ui/Select";
-import Button from "./ui/Button";
-import { validateField, validateForm } from "../utils/validators";
 import { useAuth } from "../context/AuthContext";
-import { ApiError } from "../services/api";
+import { useToast } from "../context/ToastContext";
+import { validateField, validateForm } from "../utils/validators";
 
-const FIELDS = [
-  "nombre",
-  "apellido",
-  "tipoDocumento",
-  "numeroDocumento",
-  "direccion",
-  "telefono",
-  "email",
-  "password",
-  "confirmarPassword",
+const CAMPOS = [
+  "nombre", "apellido", "tipoDocumento", "numeroDocumento",
+  "direccion", "telefono", "email", "password", "confirmarPassword",
 ];
 
-const initialValues = {
-  nombre: "",
-  apellido: "",
-  tipoDocumento: "",
-  numeroDocumento: "",
-  direccion: "",
-  telefono: "",
-  email: "",
-  password: "",
-  confirmarPassword: "",
-};
+const VALORES_INICIALES = Object.fromEntries(CAMPOS.map((campo) => [campo, ""]));
 
-const tipoDocumentoOptions = [
-  { value: "", label: "Selecciona..." },
+const TIPOS_DOCUMENTO = [
+  { value: "", label: "Selecciona…" },
   { value: "CC", label: "Cédula de ciudadanía" },
   { value: "CE", label: "Cédula de extranjería" },
   { value: "TI", label: "Tarjeta de identidad" },
   { value: "PA", label: "Pasaporte" },
 ];
 
+/** Campos que solo aceptan dígitos, filtrados mientras se escribe. */
+const SOLO_DIGITOS = new Set(["numeroDocumento", "telefono"]);
+
+/**
+ * Registro de clientes en una ventana modal.
+ *
+ * Valida en tiempo real mientras el usuario escribe y vuelve a validar el
+ * formulario completo al enviarlo. Estas comprobaciones son de comodidad: el
+ * backend repite todas por su cuenta y es quien decide.
+ */
 function RegisterModal({ isOpen, onClose, onSuccess }) {
   const { registrar } = useAuth();
-  const [values, setValues] = useState(initialValues);
-  const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
+  const toast = useToast();
+
+  const [valores, setValores] = useState(VALORES_INICIALES);
+  const [errores, setErrores] = useState({});
+  const [tocados, setTocados] = useState({});
   const [registrado, setRegistrado] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [errorServidor, setErrorServidor] = useState("");
 
-  // Cierra con la tecla Escape y bloquea el scroll del body mientras está abierto
+  // Cada apertura empieza en limpio.
   useEffect(() => {
     if (!isOpen) return;
-    document.body.style.overflow = "hidden";
-    const handleKey = (e) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => {
-      document.body.style.overflow = "";
-      window.removeEventListener("keydown", handleKey);
-    };
-  }, [isOpen, onClose]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setValues(initialValues);
-      setErrors({});
-      setTouched({});
-      setRegistrado(false);
-      setErrorServidor("");
-    }
+    setValores(VALORES_INICIALES);
+    setErrores({});
+    setTocados({});
+    setRegistrado(false);
+    setErrorServidor("");
   }, [isOpen]);
 
-  if (!isOpen) return null;
+  function alCambiar(evento) {
+    const { name } = evento.target;
+    let { value } = evento.target;
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    const next = { ...values, [name]: value };
-    setValues(next);
-    setTouched((prev) => ({ ...prev, [name]: true }));
-    setErrors((prev) => ({
-      ...prev,
-      [name]: validateField(name, value, next),
+    // Impide teclear letras donde solo caben números.
+    if (SOLO_DIGITOS.has(name)) value = value.replace(/\D/g, "");
+
+    const siguiente = { ...valores, [name]: value };
+    setValores(siguiente);
+    setTocados((previos) => ({ ...previos, [name]: true }));
+    setErrores((previos) => ({
+      ...previos,
+      [name]: validateField(name, value, siguiente),
+      // Al cambiar la contraseña hay que revalidar su confirmación.
       ...(name === "password"
-        ? { confirmarPassword: validateField("confirmarPassword", next.confirmarPassword, next) }
+        ? {
+            confirmarPassword: validateField(
+              "confirmarPassword", siguiente.confirmarPassword, siguiente
+            ),
+          }
         : {}),
     }));
     if (errorServidor) setErrorServidor("");
-  };
+  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const foundErrors = validateForm(values, FIELDS);
-    setErrors(foundErrors);
-    setTouched(FIELDS.reduce((acc, f) => ({ ...acc, [f]: true }), {}));
-    if (Object.keys(foundErrors).length > 0) return;
+  async function alEnviar(evento) {
+    evento.preventDefault();
+
+    const encontrados = validateForm(valores, CAMPOS);
+    setErrores(encontrados);
+    setTocados(Object.fromEntries(CAMPOS.map((campo) => [campo, true])));
+    if (Object.keys(encontrados).length > 0) {
+      setErrorServidor("Revisa los campos marcados antes de continuar.");
+      return;
+    }
 
     setEnviando(true);
     setErrorServidor("");
     try {
       await registrar({
-        nombre: values.nombre,
-        apellido: values.apellido,
-        tipo_documento: values.tipoDocumento,
-        numero_documento: values.numeroDocumento,
-        direccion: values.direccion,
-        telefono: values.telefono,
-        email: values.email,
-        password: values.password,
-        confirmar_password: values.confirmarPassword,
+        nombre: valores.nombre,
+        apellido: valores.apellido,
+        tipo_documento: valores.tipoDocumento,
+        numero_documento: valores.numeroDocumento,
+        direccion: valores.direccion,
+        telefono: valores.telefono,
+        email: valores.email,
+        password: valores.password,
+        confirmar_password: valores.confirmarPassword,
       });
       setRegistrado(true);
-      onSuccess?.(values);
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 409) {
-        setErrorServidor("Ya existe una cuenta con ese correo o número de documento.");
-      } else {
-        setErrorServidor(err.message || "No se pudo completar el registro.");
-      }
+      toast.exito("Cuenta creada. Ya puedes iniciar sesión.");
+      onSuccess?.(valores);
+    } catch (error) {
+      setErrorServidor(
+        error.esConflicto
+          ? "Ya existe una cuenta con ese correo o ese número de documento."
+          : error.message
+      );
     } finally {
       setEnviando(false);
     }
-  };
+  }
+
+  const campoValido = (campo) => tocados[campo] && !errores[campo] && Boolean(valores[campo]);
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/60 backdrop-blur-sm p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="register-modal-title"
-      onMouseDown={(e) => {
-        if (e.target === e.currentTarget) onClose();
-      }}
-    >
-      <div className="bg-paper w-full max-w-lg rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-ink/10 sticky top-0 bg-paper rounded-t-xl">
-          <h2 id="register-modal-title" className="font-display text-xl">
-            Crear una cuenta
-          </h2>
-          <button
-            onClick={onClose}
-            aria-label="Cerrar"
-            className="text-ink/60 hover:text-sienna transition-colors"
-          >
-            <X size={22} />
-          </button>
-        </div>
-
-        {registrado ? (
-          <div className="p-8 text-center">
-            <p className="font-display text-lg text-forest mb-2">
-              ¡Registro exitoso!
-            </p>
-            <p className="text-sm text-ink/70 mb-6">
-              Hola {values.nombre}, tu cuenta fue creada correctamente. Ya
-              puedes iniciar sesión con tu correo y contraseña.
-            </p>
-            <Button onClick={onClose}>Ir a iniciar sesión</Button>
-          </div>
+    <Modal
+      abierto={isOpen}
+      onCerrar={onClose}
+      titulo={registrado ? "¡Registro completado!" : "Crear una cuenta"}
+      descripcion={
+        registrado ? undefined : "Todos los campos son obligatorios."
+      }
+      ancho="lg"
+      pie={
+        registrado ? (
+          <Button onClick={onClose}>Ir a iniciar sesión</Button>
         ) : (
-          <form onSubmit={handleSubmit} noValidate className="p-6 flex flex-col gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Nombre"
-                name="nombre"
-                value={values.nombre}
-                onChange={handleChange}
-                error={touched.nombre && errors.nombre}
-                maxLength={40}
-              />
-              <Input
-                label="Apellido"
-                name="apellido"
-                value={values.apellido}
-                onChange={handleChange}
-                error={touched.apellido && errors.apellido}
-                maxLength={40}
-              />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Select
-                label="Tipo de documento"
-                name="tipoDocumento"
-                value={values.tipoDocumento}
-                onChange={handleChange}
-                error={touched.tipoDocumento && errors.tipoDocumento}
-                options={tipoDocumentoOptions}
-              />
-              <Input
-                label="Número de documento"
-                name="numeroDocumento"
-                inputMode="numeric"
-                value={values.numeroDocumento}
-                onChange={handleChange}
-                error={touched.numeroDocumento && errors.numeroDocumento}
-                maxLength={15}
-              />
-            </div>
-
+          <>
+            <Button variant="fantasma" onClick={onClose} disabled={enviando}>
+              Cancelar
+            </Button>
+            <Button
+              type="submit"
+              form="formulario-registro"
+              cargando={enviando}
+              iconoIzquierda={UserPlus}
+            >
+              {enviando ? "Creando la cuenta…" : "Registrarme"}
+            </Button>
+          </>
+        )
+      }
+    >
+      {registrado ? (
+        <div className="py-6 text-center">
+          <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full
+                           border border-exito/30 bg-exito-suave text-exito">
+            <CheckCircle2 size={26} aria-hidden="true" />
+          </span>
+          <p className="font-display text-lg">Hola, {valores.nombre}</p>
+          <p className="mx-auto mt-2 max-w-sm text-sm text-ink-soft">
+            Tu cuenta quedó creada correctamente y te enviamos un correo de
+            bienvenida. Ya puedes iniciar sesión con {valores.email}.
+          </p>
+        </div>
+      ) : (
+        <form id="formulario-registro" onSubmit={alEnviar} noValidate className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Input
-              label="Dirección"
-              name="direccion"
-              value={values.direccion}
-              onChange={handleChange}
-              error={touched.direccion && errors.direccion}
-              maxLength={100}
+              label="Nombre" name="nombre" autoComplete="given-name"
+              value={valores.nombre} onChange={alCambiar}
+              error={tocados.nombre ? errores.nombre : ""} valido={campoValido("nombre")}
+              maxLength={40} required
             />
-
             <Input
-              label="Teléfono"
-              name="telefono"
-              inputMode="numeric"
-              value={values.telefono}
-              onChange={handleChange}
-              error={touched.telefono && errors.telefono}
-              maxLength={10}
+              label="Apellido" name="apellido" autoComplete="family-name"
+              value={valores.apellido} onChange={alCambiar}
+              error={tocados.apellido ? errores.apellido : ""} valido={campoValido("apellido")}
+              maxLength={40} required
             />
+          </div>
 
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Select
+              label="Tipo de documento" name="tipoDocumento"
+              value={valores.tipoDocumento} onChange={alCambiar}
+              error={tocados.tipoDocumento ? errores.tipoDocumento : ""}
+              options={TIPOS_DOCUMENTO} required
+            />
             <Input
-              label="Correo electrónico"
-              name="email"
-              type="email"
-              value={values.email}
-              onChange={handleChange}
-              error={touched.email && errors.email}
-              maxLength={80}
+              label="Número de documento" name="numeroDocumento"
+              inputMode="numeric" value={valores.numeroDocumento} onChange={alCambiar}
+              error={tocados.numeroDocumento ? errores.numeroDocumento : ""}
+              valido={campoValido("numeroDocumento")}
+              hint="Entre 6 y 15 dígitos." maxLength={15} contador required
             />
+          </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Input
-                label="Contraseña"
-                name="password"
-                type="password"
-                value={values.password}
-                onChange={handleChange}
-                error={touched.password && errors.password}
-                hint={!errors.password ? "Mín. 8 caracteres, mayúscula, minúscula y número." : undefined}
-                maxLength={64}
-              />
-              <Input
-                label="Confirmar contraseña"
-                name="confirmarPassword"
-                type="password"
-                value={values.confirmarPassword}
-                onChange={handleChange}
-                error={touched.confirmarPassword && errors.confirmarPassword}
-                maxLength={64}
-              />
-            </div>
+          <Input
+            label="Dirección" name="direccion" autoComplete="street-address"
+            value={valores.direccion} onChange={alCambiar}
+            error={tocados.direccion ? errores.direccion : ""} valido={campoValido("direccion")}
+            maxLength={100} contador required
+          />
 
-            {errorServidor && (
-              <p className="text-sm text-sienna bg-sienna/10 border border-sienna/30 rounded-md px-3 py-2">
-                {errorServidor}
-              </p>
-            )}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="Teléfono" name="telefono" inputMode="numeric" autoComplete="tel"
+              value={valores.telefono} onChange={alCambiar}
+              error={tocados.telefono ? errores.telefono : ""} valido={campoValido("telefono")}
+              hint="Entre 7 y 10 dígitos." maxLength={10} contador required
+            />
+            <Input
+              label="Correo electrónico" name="email" type="email" autoComplete="email"
+              value={valores.email} onChange={alCambiar}
+              error={tocados.email ? errores.email : ""} valido={campoValido("email")}
+              maxLength={80} required
+            />
+          </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 mt-2">
-              <Button type="submit" className="flex-1" disabled={enviando}>
-                {enviando ? "Registrando..." : "Registrarme"}
-              </Button>
-              <Button type="button" variant="outline" className="flex-1" onClick={onClose} disabled={enviando}>
-                Cancelar
-              </Button>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Input
+              label="Contraseña" name="password" type="password" autoComplete="new-password"
+              value={valores.password} onChange={alCambiar}
+              error={tocados.password ? errores.password : ""}
+              hint="Mín. 8 caracteres, mayúscula, minúscula y número."
+              maxLength={64} required
+            />
+            <Input
+              label="Confirmar contraseña" name="confirmarPassword" type="password"
+              autoComplete="new-password"
+              value={valores.confirmarPassword} onChange={alCambiar}
+              error={tocados.confirmarPassword ? errores.confirmarPassword : ""}
+              valido={campoValido("confirmarPassword")}
+              maxLength={64} required
+            />
+          </div>
+
+          {errorServidor && <Alert tipo="error">{errorServidor}</Alert>}
+        </form>
+      )}
+    </Modal>
   );
 }
 

@@ -1,176 +1,226 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import Input from "../components/ui/Input";
-import Button from "../components/ui/Button";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ArrowRight, LogIn } from "lucide-react";
+
 import RecoverPassword from "../components/RecoverPassword";
 import RegisterModal from "../components/RegisterModal";
-import WhatsAppButton from "../components/WhatsAppButton";
-import { validateField } from "../utils/validators";
+import Logo from "../components/Logo";
+import Alert from "../components/ui/Alert";
+import Button from "../components/ui/Button";
+import Input from "../components/ui/Input";
 import { useAuth } from "../context/AuthContext";
+import { useToast } from "../context/ToastContext";
+import { validateField } from "../utils/validators";
 
-const initialValues = { email: "", password: "" };
+const VALORES_INICIALES = { email: "", password: "" };
 
-function BrandBar() {
+/** Panel lateral decorativo con el argumento de venta de la galería. */
+function PanelMarca() {
   return (
-    <div className="bg-forest border-b-[3px] border-gold py-7 sm:py-8">
-      <div className="container mx-auto max-w-6xl px-6 flex justify-center">
-        <Link to="/" className="flex items-center gap-4">
-          <span className="flex items-center justify-center w-12 h-12 sm:w-14 sm:h-14 rounded-full border-2 border-gold font-display italic text-gold text-2xl">
-            O
-          </span>
-          <span className="font-display text-2xl sm:text-3xl text-paper">
-            Óleo<span className="text-gold italic px-1">&amp;</span>Lienzo
-          </span>
-        </Link>
+    <aside className="relative hidden overflow-hidden bg-gradient-to-br from-forest
+                      to-forest-dark p-12 lg:flex lg:flex-col lg:justify-between">
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.08]"
+        aria-hidden="true"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 25% 25%, #c9a227 0%, transparent 45%), " +
+            "radial-gradient(circle at 75% 75%, #c9a227 0%, transparent 45%)",
+        }}
+      />
+      <div className="relative">
+        <Logo tamano="lg" />
       </div>
-    </div>
+      <div className="relative">
+        <p className="font-display text-3xl leading-snug text-paper">
+          «El arte no reproduce lo visible; lo hace visible.»
+        </p>
+        <p className="mt-4 etiqueta text-gold">Paul Klee</p>
+      </div>
+      <p className="relative text-sm leading-relaxed text-paper/60">
+        Galería de arte contemporáneo especializada en piezas originales de
+        pintores colombianos. Desde 2015.
+      </p>
+    </aside>
   );
 }
 
 function Login() {
-  const navigate = useNavigate();
-  const { login } = useAuth();
-  const [values, setValues] = useState(initialValues);
-  const [errors, setErrors] = useState({});
-  const [touched, setTouched] = useState({});
+  const navegar = useNavigate();
+  const ubicacion = useLocation();
+  const { login, rutaPanel } = useAuth();
+  const toast = useToast();
+
+  const [valores, setValores] = useState(VALORES_INICIALES);
+  const [errores, setErrores] = useState({});
+  const [tocados, setTocados] = useState({});
   const [recordarme, setRecordarme] = useState(false);
   const [vista, setVista] = useState("login"); // "login" | "recuperar"
   const [modalAbierto, setModalAbierto] = useState(false);
-  const [sesionIniciada, setSesionIniciada] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [errorServidor, setErrorServidor] = useState("");
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    const next = { ...values, [name]: value };
-    setValues(next);
-    setTouched((prev) => ({ ...prev, [name]: true }));
-    setErrors((prev) => ({ ...prev, [name]: validateField(name, value, next) }));
+  function alCambiar(evento) {
+    const { name, value } = evento.target;
+    const siguiente = { ...valores, [name]: value };
+    setValores(siguiente);
+    setTocados((previos) => ({ ...previos, [name]: true }));
+    setErrores((previos) => ({ ...previos, [name]: validateField(name, value, siguiente) }));
     if (errorServidor) setErrorServidor("");
-  };
+  }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    const emailError = validateField("email", values.email);
-    const passwordError = values.password ? "" : "Este campo es obligatorio.";
-    setErrors({ email: emailError, password: passwordError });
-    setTouched({ email: true, password: true });
-    if (emailError || passwordError) return;
+  async function alEnviar(evento) {
+    evento.preventDefault();
+
+    const errorEmail = validateField("email", valores.email);
+    const errorPassword = valores.password ? "" : "Este campo es obligatorio.";
+    setErrores({ email: errorEmail, password: errorPassword });
+    setTocados({ email: true, password: true });
+    if (errorEmail || errorPassword) return;
 
     setEnviando(true);
     setErrorServidor("");
     try {
-      await login(values.email, values.password);
-      setSesionIniciada(true);
-    } catch (err) {
-      setErrorServidor(err.message || "No se pudo iniciar sesión.");
+      const usuario = await login(valores.email, valores.password, recordarme);
+      toast.exito(`¡Bienvenido de nuevo, ${usuario.nombre}!`);
+
+      // Vuelve a donde el usuario quería ir, o a su panel.
+      const destino =
+        ubicacion.state?.desde ||
+        (usuario.rol.nombre === "administrador"
+          ? "/panel/administrador"
+          : usuario.rol.nombre === "empleado"
+          ? "/panel/empleado"
+          : "/panel/cliente");
+      navegar(destino, { replace: true });
+    } catch (error) {
+      setErrorServidor(
+        error.status === 429
+          ? "Demasiados intentos seguidos. Espera un minuto antes de volver a probar."
+          : error.message
+      );
     } finally {
       setEnviando(false);
     }
-  };
-
-  if (vista === "recuperar") {
-    return (
-      <div className="min-h-screen flex flex-col bg-wall">
-        <BrandBar />
-        <div className="flex-1 flex items-center container mx-auto px-6 py-10">
-          <RecoverPassword onBackToLogin={() => setVista("login")} />
-        </div>
-        <WhatsAppButton />
-      </div>
-    );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-wall">
-      <BrandBar />
-      <div className="flex-1 flex items-center container mx-auto px-6 py-12">
-      <div className="bg-paper border-t-4 border-gold rounded-xl p-7 sm:p-10 shadow-xl shadow-ink/10 max-w-md w-full mx-auto">
-        <h1 className="font-display text-3xl mb-2">Iniciar sesión</h1>
-        <p className="text-sm text-ink/70 mb-7">
-          Ingresa con tu correo y contraseña para ver tus obras favoritas y
-          tus pedidos.
-        </p>
+    <div className="grid min-h-screen grid-cols-1 lg:grid-cols-[1fr_1.1fr]">
+      <PanelMarca />
 
-        {sesionIniciada ? (
-          <div>
-            <p className="text-sm text-forest mb-6">
-              ¡Bienvenido de nuevo! Iniciaste sesión correctamente.
-            </p>
-            <Button className="w-full" onClick={() => navigate("/")}>
-              Ir a la galería
-            </Button>
+      <div className="flex flex-col bg-wall">
+        {/* Cabecera de marca, solo en pantallas donde no hay panel lateral */}
+        <div className="border-b-[3px] border-gold bg-forest py-6 lg:hidden">
+          <div className="contenedor flex justify-center">
+            <Link to="/" aria-label="Óleo & Lienzo, ir al inicio">
+              <Logo tamano="md" />
+            </Link>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-            <Input
-              label="Correo electrónico"
-              name="email"
-              type="email"
-              value={values.email}
-              onChange={handleChange}
-              error={touched.email && errors.email}
-              maxLength={80}
-            />
-            <Input
-              label="Contraseña"
-              name="password"
-              type="password"
-              value={values.password}
-              onChange={handleChange}
-              error={touched.password && errors.password}
-              maxLength={64}
-            />
+        </div>
 
-            {errorServidor && (
-              <p className="text-sm text-sienna bg-sienna/10 border border-sienna/30 rounded-md px-3 py-2">
-                {errorServidor}
-              </p>
-            )}
+        <div className="flex flex-1 items-center justify-center px-4 py-10 sm:px-6">
+          {vista === "recuperar" ? (
+            <RecoverPassword onVolver={() => setVista("login")} />
+          ) : (
+            <div className="w-full max-w-md">
+              <div className="rounded-2xl border-t-4 border-gold bg-paper p-7 shadow-media sm:p-9">
+                <h1 className="font-display text-3xl">Iniciar sesión</h1>
+                <p className="mb-7 mt-2 text-sm text-ink-soft">
+                  Accede para gestionar tus pedidos, tus facturas y tus solicitudes.
+                </p>
 
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2 text-sm text-ink/75">
-                <input
-                  type="checkbox"
-                  checked={recordarme}
-                  onChange={(e) => setRecordarme(e.target.checked)}
-                  className="w-4 h-4 accent-forest"
-                />
-                Recordarme
-              </label>
-              <button
-                type="button"
-                onClick={() => setVista("recuperar")}
-                className="text-xs font-mono uppercase tracking-wider text-ink/60 hover:text-forest"
+                <form onSubmit={alEnviar} noValidate className="flex flex-col gap-4">
+                  <Input
+                    label="Correo electrónico"
+                    name="email"
+                    type="email"
+                    autoComplete="email"
+                    value={valores.email}
+                    onChange={alCambiar}
+                    error={tocados.email ? errores.email : ""}
+                    valido={tocados.email && !errores.email && Boolean(valores.email)}
+                    maxLength={80}
+                    required
+                  />
+                  <Input
+                    label="Contraseña"
+                    name="password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={valores.password}
+                    onChange={alCambiar}
+                    error={tocados.password ? errores.password : ""}
+                    maxLength={64}
+                    required
+                  />
+
+                  {errorServidor && <Alert tipo="error">{errorServidor}</Alert>}
+
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-soft">
+                      <input
+                        type="checkbox"
+                        checked={recordarme}
+                        onChange={(evento) => setRecordarme(evento.target.checked)}
+                        className="h-4 w-4 accent-forest"
+                      />
+                      No cerrar sesión
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setVista("recuperar")}
+                      className="etiqueta text-muted transition-colors hover:text-forest"
+                    >
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  </div>
+
+                  <Button
+                    type="submit"
+                    size="lg"
+                    cargando={enviando}
+                    iconoIzquierda={LogIn}
+                    className="mt-1 w-full"
+                  >
+                    {enviando ? "Entrando…" : "Iniciar sesión"}
+                  </Button>
+                </form>
+
+                <div className="mt-7 border-t border-line pt-5 text-center">
+                  <p className="text-sm text-ink-soft">
+                    ¿No tienes cuenta?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setModalAbierto(true)}
+                      className="font-semibold text-forest underline underline-offset-2
+                                 transition-colors hover:text-gold"
+                    >
+                      Crear una cuenta
+                    </button>
+                  </p>
+                </div>
+              </div>
+
+              <Link
+                to="/"
+                className="mt-5 flex items-center justify-center gap-1.5 etiqueta text-muted
+                           transition-colors hover:text-forest"
               >
-                ¿Olvidaste tu contraseña?
-              </button>
+                Volver a la galería
+                <ArrowRight size={12} aria-hidden="true" />
+              </Link>
             </div>
-
-            <Button type="submit" disabled={enviando}>
-              {enviando ? "Ingresando..." : "Iniciar sesión"}
-            </Button>
-
-            <p className="text-center text-sm text-ink/70">
-              ¿No tienes cuenta?{" "}
-              <button
-                type="button"
-                onClick={() => setModalAbierto(true)}
-                className="text-forest font-medium hover:underline"
-              >
-                Crear una cuenta
-              </button>
-            </p>
-          </form>
-        )}
-      </div>
+          )}
+        </div>
       </div>
 
       <RegisterModal
         isOpen={modalAbierto}
         onClose={() => setModalAbierto(false)}
+        onSuccess={(datos) => {
+          setValores((previos) => ({ ...previos, email: datos.email }));
+        }}
       />
-      <WhatsAppButton />
     </div>
   );
 }

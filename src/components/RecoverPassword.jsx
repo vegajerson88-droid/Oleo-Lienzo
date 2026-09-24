@@ -1,79 +1,131 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import Input from "./ui/Input";
+import { MailCheck, Send } from "lucide-react";
+
+import Alert from "./ui/Alert";
 import Button from "./ui/Button";
+import Input from "./ui/Input";
+import { api } from "../services/api";
 import { validateField } from "../utils/validators";
 
-function RecoverPassword({ onBackToLogin }) {
+/**
+ * Recuperación de contraseña.
+ *
+ * Componente reutilizable e independiente del formulario de inicio de sesión:
+ * se usa tanto embebido en la página de login como por separado.
+ *
+ * El backend responde siempre lo mismo exista o no la cuenta, de modo que
+ * esta pantalla no permite averiguar qué correos están registrados.
+ */
+function RecoverPassword({ onVolver }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
-  const [touched, setTouched] = useState(false);
+  const [tocado, setTocado] = useState(false);
   const [enviado, setEnviado] = useState(false);
+  const [enviando, setEnviando] = useState(false);
+  const [errorServidor, setErrorServidor] = useState("");
 
-  const handleChange = (e) => {
-    const { value } = e.target;
+  function alCambiar(evento) {
+    const { value } = evento.target;
     setEmail(value);
-    setTouched(true);
+    setTocado(true);
     setError(validateField("email", value));
-  };
+    if (errorServidor) setErrorServidor("");
+  }
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    const message = validateField("email", email);
-    setError(message);
-    setTouched(true);
-    if (!message) {
+  async function alEnviar(evento) {
+    evento.preventDefault();
+    const mensaje = validateField("email", email);
+    setError(mensaje);
+    setTocado(true);
+    if (mensaje) return;
+
+    setEnviando(true);
+    setErrorServidor("");
+    try {
+      await api.recuperarPassword(email);
       setEnviado(true);
+    } catch (fallo) {
+      setErrorServidor(
+        fallo.status === 429
+          ? "Has hecho demasiadas solicitudes. Espera un minuto."
+          : fallo.message
+      );
+    } finally {
+      setEnviando(false);
     }
-  };
+  }
+
+  const enlaceVolver = onVolver ? (
+    <button
+      type="button"
+      onClick={onVolver}
+      className="etiqueta text-muted transition-colors hover:text-forest"
+    >
+      Volver a iniciar sesión
+    </button>
+  ) : (
+    <Link to="/login" className="etiqueta text-muted transition-colors hover:text-forest">
+      Volver a iniciar sesión
+    </Link>
+  );
 
   return (
-    <div className="bg-paper border-t-4 border-gold rounded-xl p-7 sm:p-10 shadow-xl shadow-ink/10 max-w-md w-full mx-auto">
-      <h2 className="font-display text-2xl mb-2">Recuperar contraseña</h2>
-      <p className="text-sm text-ink/70 mb-6">
-        Escribe tu correo y te enviaremos las instrucciones para restablecer
-        tu contraseña.
-      </p>
-
+    <div className="w-full max-w-md rounded-2xl border-t-4 border-gold bg-paper p-7
+                    shadow-media sm:p-9">
       {enviado ? (
-        <div>
-          <p className="text-sm text-forest mb-6">
-            Si <strong>{email}</strong> está registrado, recibirás un correo
-            con los pasos para recuperar tu contraseña en unos minutos.
+        <div className="text-center">
+          <span className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full
+                           border border-exito/30 bg-exito-suave text-exito">
+            <MailCheck size={26} aria-hidden="true" />
+          </span>
+          <h2 className="font-display text-2xl">Revisa tu correo</h2>
+          <p className="mb-7 mt-3 text-sm leading-relaxed text-ink-soft">
+            Si <strong className="text-ink">{email}</strong> corresponde a una cuenta
+            registrada, recibirás en unos minutos un mensaje con el enlace para
+            crear una contraseña nueva.
           </p>
-          <Button variant="outline" className="w-full" onClick={onBackToLogin}>
+          <Button variant="secundario" className="w-full" onClick={onVolver}>
             Volver a iniciar sesión
           </Button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-5">
-          <Input
-            label="Correo electrónico"
-            name="email"
-            type="email"
-            value={email}
-            onChange={handleChange}
-            error={touched && error}
-            maxLength={80}
-          />
-          <Button type="submit">Recuperar contraseña</Button>
-          {onBackToLogin ? (
-            <button
-              type="button"
-              onClick={onBackToLogin}
-              className="text-xs font-mono uppercase tracking-wider text-ink/60 hover:text-forest text-center"
+        <>
+          <h2 className="font-display text-2xl">Recuperar contraseña</h2>
+          <p className="mb-6 mt-2 text-sm text-ink-soft">
+            Escribe el correo de tu cuenta y te enviaremos las instrucciones para
+            restablecerla.
+          </p>
+
+          <form onSubmit={alEnviar} noValidate className="flex flex-col gap-4">
+            <Input
+              label="Correo electrónico"
+              name="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={alCambiar}
+              error={tocado ? error : ""}
+              valido={tocado && !error && Boolean(email)}
+              maxLength={80}
+              required
+            />
+
+            {errorServidor && <Alert tipo="error">{errorServidor}</Alert>}
+
+            <Button
+              type="submit"
+              size="lg"
+              cargando={enviando}
+              iconoIzquierda={Send}
+              className="w-full"
             >
-              Volver a iniciar sesión
-            </button>
-          ) : (
-            <Link
-              to="/login"
-              className="text-xs font-mono uppercase tracking-wider text-ink/60 hover:text-forest text-center"
-            >
-              Volver a iniciar sesión
-            </Link>
-          )}
-        </form>
+              Enviar instrucciones
+            </Button>
+          </form>
+
+          <div className="mt-6 text-center">{enlaceVolver}</div>
+        </>
       )}
     </div>
   );

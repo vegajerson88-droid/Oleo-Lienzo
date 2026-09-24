@@ -1,91 +1,144 @@
 import { Link } from "react-router-dom";
-import { Palette, Truck, ShieldCheck } from "lucide-react";
+import { ArrowRight, Palette, ShieldCheck, Sparkles, Truck } from "lucide-react";
+
 import Carousel from "../components/Carousel";
 
-const features = [
+const GARANTIAS = [
   {
-    Icon: Palette,
-    title: "Piezas 100% originales",
-    text: "Cada obra es única, firmada y autenticada directamente por su artista.",
+    Icono: Palette,
+    titulo: "Piezas 100% originales",
+    texto: "Cada obra es única, firmada y autenticada directamente por su artista.",
   },
   {
-    Icon: Truck,
-    title: "Envíos a todo el país",
-    text: "Empacamos con materiales especializados para proteger cada lienzo en tránsito.",
+    Icono: Truck,
+    titulo: "Envíos a todo el país",
+    texto: "Empacamos con materiales especializados para proteger cada lienzo en tránsito.",
   },
   {
-    Icon: ShieldCheck,
-    title: "Certificado de autenticidad",
-    text: "Recibe tu obra con documento de respaldo y garantía de originalidad.",
+    Icono: ShieldCheck,
+    titulo: "Certificado de autenticidad",
+    texto: "Recibe tu obra con documento de respaldo y garantía de originalidad.",
   },
+];
+
+const CIFRAS = [
+  { valor: "10", etiqueta: "Obras en colección" },
+  { valor: "4", etiqueta: "Artistas representados" },
+  { valor: "2015", etiqueta: "Desde" },
+  { valor: "100%", etiqueta: "Piezas originales" },
 ];
 
 function Index() {
   return (
     <div>
-      <section className="bg-gradient-to-b from-forest to-forest-dark text-paper">
-        <div className="container mx-auto max-w-6xl px-6 py-16 sm:py-20 text-center">
-          <span className="font-mono text-xs uppercase tracking-widest text-gold">
+      {/* Portada */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-forest to-forest-dark text-paper">
+        {/* Textura sutil de fondo, puramente decorativa. */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.07]"
+          aria-hidden="true"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 30%, #c9a227 0%, transparent 42%), " +
+              "radial-gradient(circle at 80% 70%, #c9a227 0%, transparent 42%)",
+          }}
+        />
+
+        <div className="contenedor relative py-16 text-center sm:py-24">
+          <span className="inline-flex items-center gap-2 rounded-full border border-gold/40
+                           bg-gold/10 px-4 py-1.5 etiqueta text-gold">
+            <Sparkles size={12} aria-hidden="true" />
             Colección permanente
           </span>
-          <h1 className="font-display text-3xl sm:text-5xl mt-3 mb-5 max-w-3xl mx-auto">
+
+          <h1 className="mx-auto mt-5 max-w-3xl font-display text-3xl leading-tight sm:text-5xl">
             Diez lienzos, diez maneras de mirar el mundo
           </h1>
-          <p className="text-paper/80 max-w-xl mx-auto mb-8 text-sm sm:text-base">
-            Recorre nuestra selección curada de piezas originales. Cada obra
-            incluye su ficha técnica y está disponible para adquisición
-            directa con el artista.
+
+          <p className="mx-auto mb-9 mt-5 max-w-xl text-sm text-paper/80 sm:text-base">
+            Recorre nuestra selección curada de piezas originales. Cada obra incluye
+            su ficha técnica y está disponible para adquisición directa con el artista.
           </p>
+
           <div className="flex flex-wrap justify-center gap-3">
-            <a
-              href="#coleccion"
-              className="font-mono text-xs uppercase tracking-wider bg-gold text-forest-dark px-6 py-3 rounded-md hover:bg-gold/90 transition-colors"
+            <Link
+              to="/catalogo"
+              className="inline-flex items-center gap-2 rounded-lg bg-gold px-6 py-3.5 etiqueta
+                         font-semibold text-forest-dark transition-colors hover:bg-gold-soft"
             >
-              Ver colección
-            </a>
+              Ver el catálogo
+              <ArrowRight size={14} aria-hidden="true" />
+            </Link>
             <Link
               to="/contacto"
-              className="font-mono text-xs uppercase tracking-wider border border-paper/40 text-paper px-6 py-3 rounded-md hover:border-gold hover:text-gold transition-colors"
+              className="inline-flex items-center gap-2 rounded-lg border border-paper/35 px-6 py-3.5
+                         etiqueta text-paper transition-colors hover:border-gold hover:text-gold"
             >
               Contáctanos
             </Link>
           </div>
+
+          {/* Cifras de la galería */}
+          <dl className="mx-auto mt-14 grid max-w-2xl grid-cols-2 gap-6 border-t border-paper/15
+                         pt-9 sm:grid-cols-4">
+            {CIFRAS.map(({ valor, etiqueta }) => (
+              <div key={etiqueta}>
+                <dt className="sr-only">{etiqueta}</dt>
+                <dd>
+                  <span className="block font-display text-2xl text-gold sm:text-3xl">{valor}</span>
+                  <span className="mt-1 block etiqueta text-paper/60">{etiqueta}</span>
+                </dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </section>
 
-      <section id="coleccion" className="py-14 sm:py-20 -mt-1">
+      {/* Carrusel */}
+      <section id="coleccion" className="py-14 sm:py-20">
+        <div className="contenedor mb-8 text-center">
+          <span className="etiqueta text-sienna">Obras destacadas</span>
+          <h2 className="mt-2 font-display text-2xl sm:text-3xl">
+            Recorre la colección pieza a pieza
+          </h2>
+        </div>
         <Carousel />
       </section>
 
-      <section className="container mx-auto max-w-6xl px-6 pb-16 sm:pb-20">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          {features.map(({ Icon, title, text }) => (
-            <div
-              key={title}
-              className="bg-paper rounded-xl border-t-4 border-gold p-6 shadow-sm"
+      {/* Garantías */}
+      <section className="contenedor pb-16 sm:pb-20">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+          {GARANTIAS.map(({ Icono, titulo, texto }) => (
+            <article
+              key={titulo}
+              className="rounded-xl border-t-4 border-gold bg-paper p-6 shadow-suave
+                         transition-shadow hover:shadow-media"
             >
-              <Icon className="text-forest mb-3" size={26} />
-              <h3 className="font-display text-lg mb-1.5">{title}</h3>
-              <p className="text-sm text-ink/75">{text}</p>
-            </div>
+              <Icono className="mb-3 text-forest" size={26} aria-hidden="true" />
+              <h3 className="mb-1.5 font-display text-lg">{titulo}</h3>
+              <p className="text-sm leading-relaxed text-ink-soft">{texto}</p>
+            </article>
           ))}
         </div>
       </section>
 
-      <section className="bg-paper border-y border-ink/10">
-        <div className="container mx-auto max-w-4xl px-6 py-14 text-center">
-          <h2 className="font-display text-2xl sm:text-3xl mb-3">
+      {/* Llamada a la acción */}
+      <section className="border-y border-line bg-paper">
+        <div className="contenedor max-w-3xl py-14 text-center">
+          <h2 className="mb-3 font-display text-2xl sm:text-3xl">
             Únete a nuestra comunidad de coleccionistas
           </h2>
-          <p className="text-ink/75 max-w-xl mx-auto mb-7 text-sm sm:text-base">
-            Crea una cuenta para guardar tus piezas favoritas, recibir
-            novedades de la galería y agilizar tu próxima compra.
+          <p className="mx-auto mb-7 max-w-xl text-sm text-ink-soft sm:text-base">
+            Crea una cuenta para hacer pedidos, consultar tus facturas y recibir
+            novedades de la galería.
           </p>
           <Link
             to="/login"
-            className="inline-block font-mono text-xs uppercase tracking-wider bg-forest text-paper px-7 py-3 rounded-md hover:bg-forest-dark transition-colors"
+            className="inline-flex items-center gap-2 rounded-lg bg-forest px-7 py-3.5 etiqueta
+                       text-paper transition-colors hover:bg-forest-dark"
           >
-            Crear cuenta / Iniciar sesión
+            Crear cuenta o iniciar sesión
+            <ArrowRight size={14} aria-hidden="true" />
           </Link>
         </div>
       </section>

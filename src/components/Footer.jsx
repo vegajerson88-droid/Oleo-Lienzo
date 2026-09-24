@@ -1,5 +1,7 @@
 import { Link } from "react-router-dom";
-import { Mail } from "lucide-react";
+import { Clock, Mail, MapPin, Phone } from "lucide-react";
+
+import Logo from "./Logo";
 
 function InstagramIcon(props) {
   return (
@@ -27,80 +29,97 @@ function TwitterIcon(props) {
   );
 }
 
-const enlaces = [
-  { to: "/", label: "Inicio" },
+const NAVEGACION = [
+  { to: "/", label: "Galería" },
+  { to: "/catalogo", label: "Catálogo" },
   { to: "/quienes-somos", label: "¿Quiénes Somos?" },
   { to: "/contacto", label: "Contacto" },
   { to: "/login", label: "Iniciar sesión" },
 ];
 
-const redes = [
-  { href: "https://instagram.com", label: "Instagram", Icon: InstagramIcon },
-  { href: "https://facebook.com", label: "Facebook", Icon: FacebookIcon },
-  { href: "https://twitter.com", label: "Twitter / X", Icon: TwitterIcon },
-  { href: "mailto:contacto@oleoylienzo.com", label: "Correo", Icon: Mail },
+const REDES = [
+  { href: "https://instagram.com", label: "Instagram", Icono: InstagramIcon },
+  { href: "https://facebook.com", label: "Facebook", Icono: FacebookIcon },
+  { href: "https://twitter.com", label: "Twitter / X", Icono: TwitterIcon },
+  { href: "mailto:contacto@oleoylienzo.com", label: "Correo", Icono: Mail },
+];
+
+const CONTACTO = [
+  { Icono: MapPin, texto: "Calle 45 # 12-30, Bogotá D.C." },
+  { Icono: Clock, texto: "Martes a sábado, 10:00 a.m. – 6:00 p.m." },
+  { Icono: Phone, texto: "+57 300 123 4567" },
+  { Icono: Mail, texto: "contacto@oleoylienzo.com" },
 ];
 
 function Footer() {
   return (
-    <footer className="bg-forest-dark text-paper mt-16">
-      <div className="container mx-auto max-w-6xl px-6 py-12 grid grid-cols-1 sm:grid-cols-3 gap-10">
-        <div>
-          <h3 className="font-display text-lg mb-4">Óleo &amp; Lienzo</h3>
+    <footer className="bg-forest-dark text-paper">
+      <div className="contenedor grid grid-cols-1 gap-10 py-14 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="sm:col-span-2 lg:col-span-1">
+          <Logo tamano="sm" />
+          <p className="mt-4 text-sm leading-relaxed text-paper/70">
+            Galería de arte contemporáneo especializada en piezas originales de
+            pintores colombianos. Acompañamos a coleccionistas y artistas desde 2015.
+          </p>
+        </div>
+
+        <nav aria-label="Enlaces del pie de página">
+          <h3 className="mb-4 etiqueta text-gold">Navegación</h3>
           <ul className="space-y-2.5">
-            {enlaces.map((e) => (
-              <li key={e.to}>
+            {NAVEGACION.map((enlace) => (
+              <li key={enlace.to}>
                 <Link
-                  to={e.to}
-                  className="text-sm text-paper/75 hover:text-gold transition-colors"
+                  to={enlace.to}
+                  className="text-sm text-paper/70 transition-colors hover:text-gold"
                 >
-                  {e.label}
+                  {enlace.label}
                 </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+
+        <div>
+          <h3 className="mb-4 etiqueta text-gold">Visítanos</h3>
+          <ul className="space-y-2.5">
+            {CONTACTO.map(({ Icono, texto }) => (
+              <li key={texto} className="flex items-start gap-2.5 text-sm text-paper/70">
+                <Icono size={15} className="mt-0.5 shrink-0 text-gold/60" aria-hidden="true" />
+                {texto}
               </li>
             ))}
           </ul>
         </div>
 
         <div>
-          <h3 className="font-mono text-xs uppercase tracking-wider text-gold mb-4">
-            Sobre nosotros
-          </h3>
-          <p className="text-sm text-paper/75 leading-relaxed">
-            Galería de arte contemporáneo especializada en piezas originales
-            de pintores colombianos. Acompañamos a coleccionistas y artistas
-            desde 2015, con envíos certificados a todo el país.
-          </p>
-        </div>
-
-        <div>
-          <h3 className="font-mono text-xs uppercase tracking-wider text-gold mb-4">
-            Síguenos
-          </h3>
+          <h3 className="mb-4 etiqueta text-gold">Síguenos</h3>
           <div className="flex gap-3">
-            {redes.map(({ href, label, Icon }) => (
+            {REDES.map(({ href, label, Icono }) => (
               <a
                 key={label}
                 href={href}
                 target="_blank"
                 rel="noreferrer"
                 aria-label={label}
-                className="w-9 h-9 flex items-center justify-center rounded-full border border-paper/25 text-paper/75 hover:border-gold hover:text-gold transition-colors"
+                className="flex h-10 w-10 items-center justify-center rounded-full border
+                           border-paper/25 text-paper/70 transition-colors
+                           hover:border-gold hover:text-gold"
               >
-                <Icon className="w-4 h-4" />
+                <Icono className="h-4 w-4" />
               </a>
             ))}
           </div>
-          <p className="text-sm text-paper/60 mt-5">
-            Calle 45 # 12-30, Bogotá D.C.
-            <br />
-            +57 300 123 4567
+          <p className="mt-5 text-xs leading-relaxed text-paper/50">
+            Todas nuestras piezas son originales e incluyen certificado de
+            autenticidad firmado por su artista.
           </p>
         </div>
       </div>
 
       <div className="border-t border-white/10">
-        <p className="text-center text-xs font-mono text-paper/50 py-5">
-          &copy; {new Date().getFullYear()} Óleo &amp; Lienzo. Todos los derechos reservados.
+        <p className="contenedor py-5 text-center font-mono text-[11px] text-paper/45">
+          &copy; {new Date().getFullYear()} Óleo &amp; Lienzo S.A.S. · NIT 901.234.567-8 ·
+          Todos los derechos reservados.
         </p>
       </div>
     </footer>

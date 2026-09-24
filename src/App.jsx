@@ -1,55 +1,70 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
+import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+
 import MainLayout from "./components/MainLayout";
 import RequireRole from "./components/RequireRole";
-import Index from "./pages/Index";
-import QuienesSomos from "./pages/QuienesSomos";
+import { AuthProvider } from "./context/AuthContext";
+import { ToastProvider } from "./context/ToastContext";
+import Catalogo from "./pages/Catalogo";
 import Contacto from "./pages/Contacto";
+import Index from "./pages/Index";
 import Login from "./pages/Login";
+import NoEncontrado from "./pages/NoEncontrado";
+import PanelAdministrador from "./pages/PanelAdministrador";
 import PanelCliente from "./pages/PanelCliente";
 import PanelEmpleado from "./pages/PanelEmpleado";
-import PanelAdministrador from "./pages/PanelAdministrador";
+import QuienesSomos from "./pages/QuienesSomos";
+import RestablecerPassword from "./pages/RestablecerPassword";
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Routes>
-          <Route element={<MainLayout />}>
-            <Route path="/" element={<Index />} />
-            <Route path="/quienes-somos" element={<QuienesSomos />} />
-            <Route path="/contacto" element={<Contacto />} />
-            <Route
-              path="/panel/cliente"
-              element={
-                <RequireRole roles={["cliente"]}>
-                  <PanelCliente />
-                </RequireRole>
-              }
-            />
-            <Route
-              path="/panel/empleado"
-              element={
-                <RequireRole roles={["empleado", "administrador"]}>
-                  <PanelEmpleado />
-                </RequireRole>
-              }
-            />
-            <Route
-              path="/panel/administrador"
-              element={
-                <RequireRole roles={["administrador"]}>
-                  <PanelAdministrador />
-                </RequireRole>
-              }
-            />
-          </Route>
+    <ToastProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Páginas con cabecera, pie, WhatsApp y chatbot */}
+            <Route element={<MainLayout />}>
+              <Route path="/" element={<Index />} />
+              <Route path="/catalogo" element={<Catalogo />} />
+              <Route path="/quienes-somos" element={<QuienesSomos />} />
+              <Route path="/contacto" element={<Contacto />} />
 
-          {/* El login no usa el layout: no muestra Header ni Footer */}
-          <Route path="/login" element={<Login />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+              {/* Paneles protegidos por rol */}
+              <Route
+                path="/panel/cliente"
+                element={
+                  <RequireRole roles={["cliente"]}>
+                    <PanelCliente />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/panel/empleado"
+                element={
+                  <RequireRole roles={["empleado"]}>
+                    <PanelEmpleado />
+                  </RequireRole>
+                }
+              />
+              <Route
+                path="/panel/administrador"
+                element={
+                  <RequireRole roles={["administrador"]}>
+                    <PanelAdministrador />
+                  </RequireRole>
+                }
+              />
+
+              <Route path="*" element={<NoEncontrado />} />
+            </Route>
+
+            {/* Páginas a pantalla completa, sin la estructura del sitio */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/restablecer" element={<RestablecerPassword />} />
+            <Route path="/registro" element={<Navigate to="/login" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ToastProvider>
   );
 }
 

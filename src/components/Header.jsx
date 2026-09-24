@@ -1,160 +1,163 @@
-import { useState } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
-import { Menu, X, User, LogOut, LayoutDashboard } from "lucide-react";
-import { useAuth } from "../context/AuthContext";
+import { useEffect, useState } from "react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { LayoutDashboard, LogOut, Menu, User, X } from "lucide-react";
 
-const links = [
+import { useAuth } from "../context/AuthContext";
+import Logo from "./Logo";
+
+const ENLACES = [
   { to: "/", label: "Galería", end: true },
+  { to: "/catalogo", label: "Catálogo" },
   { to: "/quienes-somos", label: "Quiénes Somos" },
   { to: "/contacto", label: "Contacto" },
 ];
 
 function Header() {
-  const [open, setOpen] = useState(false);
-  const { autenticado, usuario, rol, logout } = useAuth();
-  const navigate = useNavigate();
+  const [menuAbierto, setMenuAbierto] = useState(false);
+  const { autenticado, usuario, rol, rutaPanel, logout } = useAuth();
+  const navegar = useNavigate();
+  const ubicacion = useLocation();
 
-  const linkClass = ({ isActive }) =>
-    `font-mono text-xs uppercase tracking-wider border-b-2 pb-1 transition-colors ${
-      isActive
-        ? "border-gold text-paper"
-        : "border-transparent text-paper/75 hover:text-paper"
+  // Cierra el menú móvil al cambiar de página.
+  useEffect(() => setMenuAbierto(false), [ubicacion.pathname]);
+
+  // Bloquea el desplazamiento del fondo mientras el menú móvil está abierto.
+  useEffect(() => {
+    document.body.style.overflow = menuAbierto ? "hidden" : "";
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [menuAbierto]);
+
+  const claseEnlace = ({ isActive }) =>
+    `etiqueta border-b-2 pb-1 transition-colors ${
+      isActive ? "border-gold text-paper" : "border-transparent text-paper/70 hover:text-paper"
     }`;
 
-  const handleLogout = () => {
+  function cerrarSesion() {
     logout();
-    setOpen(false);
-    navigate("/");
-  };
+    setMenuAbierto(false);
+    navegar("/");
+  }
+
+  const etiquetaPanel = rol === "cliente" ? "Mi cuenta" : "Panel";
 
   return (
-    <header className="bg-forest text-paper border-b-[3px] border-gold">
-      <div className="container mx-auto max-w-6xl px-6 flex items-center justify-between py-4">
-        <NavLink to="/" className="flex items-center gap-3">
-          <span className="flex items-center justify-center w-9 h-9 rounded-full border-2 border-gold font-display italic text-gold">
-            O
-          </span>
-          <span className="font-display text-xl">
-            Óleo<span className="text-gold italic px-0.5">&amp;</span>Lienzo
-          </span>
+    <header className="sticky top-0 z-30 border-b-[3px] border-gold bg-forest text-paper">
+      <div className="contenedor flex items-center justify-between py-3.5">
+        <NavLink to="/" aria-label="Óleo & Lienzo, ir al inicio">
+          <Logo />
         </NavLink>
 
-        <nav className="hidden md:flex items-center gap-7" aria-label="Navegación principal">
-          {links.map((l) => (
-            <NavLink key={l.to} to={l.to} end={l.end} className={linkClass}>
-              {l.label}
+        {/* Navegación de escritorio */}
+        <nav className="hidden items-center gap-7 lg:flex" aria-label="Navegación principal">
+          {ENLACES.map((enlace) => (
+            <NavLink key={enlace.to} to={enlace.to} end={enlace.end} className={claseEnlace}>
+              {enlace.label}
             </NavLink>
           ))}
 
           {autenticado ? (
-            <div className="flex items-center gap-4">
-              {(rol === "administrador" || rol === "empleado") && (
-                <NavLink
-                  to={rol === "administrador" ? "/panel/administrador" : "/panel/empleado"}
-                  className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-paper/85 hover:text-gold"
-                >
-                  <LayoutDashboard size={14} />
-                  Panel
-                </NavLink>
-              )}
-              {rol === "cliente" && (
-                <NavLink
-                  to="/panel/cliente"
-                  className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-paper/85 hover:text-gold"
-                >
-                  <LayoutDashboard size={14} />
-                  Mis pedidos
-                </NavLink>
-              )}
-              <span className="font-mono text-xs uppercase tracking-wider text-gold">
-                Hola, {usuario?.nombre}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider border border-gold/60 text-paper/85 px-3 py-2 rounded-md hover:bg-gold hover:text-forest-dark hover:border-gold transition-colors"
+            <div className="flex items-center gap-4 border-l border-paper/20 pl-6">
+              <NavLink
+                to={rutaPanel}
+                className="flex items-center gap-2 etiqueta text-paper/80 transition-colors hover:text-gold"
               >
-                <LogOut size={14} />
+                <LayoutDashboard size={14} aria-hidden="true" />
+                {etiquetaPanel}
+              </NavLink>
+
+              {/* Requisito del tercer avance: el nombre del usuario en el Navbar. */}
+              <span className="etiqueta text-gold">Hola, {usuario?.nombre}</span>
+
+              <button
+                type="button"
+                onClick={cerrarSesion}
+                className="flex items-center gap-2 rounded-lg border border-gold/50 px-3 py-2
+                           etiqueta text-paper/85 transition-colors
+                           hover:border-gold hover:bg-gold hover:text-forest-dark"
+              >
+                <LogOut size={14} aria-hidden="true" />
                 Salir
               </button>
             </div>
           ) : (
             <NavLink
               to="/login"
-              className="flex items-center gap-2 font-mono text-xs uppercase tracking-wider bg-gold/10 border border-gold text-gold px-3 py-2 rounded-md hover:bg-gold hover:text-forest-dark transition-colors"
+              className="flex items-center gap-2 rounded-lg border border-gold bg-gold/10 px-4 py-2
+                         etiqueta text-gold transition-colors hover:bg-gold hover:text-forest-dark"
             >
-              <User size={14} />
+              <User size={14} aria-hidden="true" />
               Ingresar
             </NavLink>
           )}
         </nav>
 
         <button
-          className="md:hidden text-paper"
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? "Cerrar menú" : "Abrir menú"}
-          aria-expanded={open}
+          type="button"
+          className="rounded-lg p-1 text-paper lg:hidden"
+          onClick={() => setMenuAbierto((v) => !v)}
+          aria-label={menuAbierto ? "Cerrar menú" : "Abrir menú"}
+          aria-expanded={menuAbierto}
         >
-          {open ? <X size={26} /> : <Menu size={26} />}
+          {menuAbierto ? <X size={26} /> : <Menu size={26} />}
         </button>
       </div>
 
-      {open && (
+      {/* Navegación móvil */}
+      {menuAbierto && (
         <nav
-          className="md:hidden flex flex-col gap-1 px-6 pb-5 bg-forest border-t border-gold/30"
+          className="max-h-[calc(100vh-64px)] overflow-y-auto border-t border-gold/25 bg-forest
+                     px-4 pb-6 sm:px-6 lg:hidden"
           aria-label="Navegación móvil"
         >
-          {links.map((l) => (
+          {autenticado && (
+            <p className="border-b border-white/10 py-4 etiqueta text-gold">
+              Hola, {usuario?.nombre} · {rol}
+            </p>
+          )}
+
+          {ENLACES.map((enlace) => (
             <NavLink
-              key={l.to}
-              to={l.to}
-              end={l.end}
-              onClick={() => setOpen(false)}
+              key={enlace.to}
+              to={enlace.to}
+              end={enlace.end}
               className={({ isActive }) =>
-                `font-mono text-xs uppercase tracking-wider py-3 border-b border-white/10 ${
+                `block border-b border-white/10 py-3.5 etiqueta ${
                   isActive ? "text-gold" : "text-paper/80"
                 }`
               }
             >
-              {l.label}
+              {enlace.label}
             </NavLink>
           ))}
 
           {autenticado ? (
             <>
-              {(rol === "administrador" || rol === "empleado" || rol === "cliente") && (
-                <NavLink
-                  to={
-                    rol === "administrador"
-                      ? "/panel/administrador"
-                      : rol === "empleado"
-                      ? "/panel/empleado"
-                      : "/panel/cliente"
-                  }
-                  onClick={() => setOpen(false)}
-                  className="flex items-center gap-2 py-3 border-b border-white/10 text-paper/80 font-mono text-xs uppercase tracking-wider"
-                >
-                  <LayoutDashboard size={14} />
-                  Mi panel
-                </NavLink>
-              )}
-              <span className="py-3 font-mono text-xs uppercase tracking-wider text-gold">
-                Hola, {usuario?.nombre}
-              </span>
-              <button
-                onClick={handleLogout}
-                className="mt-1 flex items-center justify-center gap-2 font-mono text-xs uppercase tracking-wider border border-gold text-gold px-3 py-2.5 rounded-md"
+              <NavLink
+                to={rutaPanel}
+                className="flex items-center gap-2 border-b border-white/10 py-3.5 etiqueta text-paper/80"
               >
-                <LogOut size={14} />
-                Salir
+                <LayoutDashboard size={14} aria-hidden="true" />
+                {etiquetaPanel}
+              </NavLink>
+              <button
+                type="button"
+                onClick={cerrarSesion}
+                className="mt-4 flex w-full items-center justify-center gap-2 rounded-lg border
+                           border-gold px-3 py-3 etiqueta text-gold"
+              >
+                <LogOut size={14} aria-hidden="true" />
+                Cerrar sesión
               </button>
             </>
           ) : (
             <NavLink
               to="/login"
-              onClick={() => setOpen(false)}
-              className="mt-3 flex items-center justify-center gap-2 font-mono text-xs uppercase tracking-wider border border-gold text-gold px-3 py-2.5 rounded-md"
+              className="mt-4 flex items-center justify-center gap-2 rounded-lg bg-gold px-3 py-3
+                         etiqueta font-semibold text-forest-dark"
             >
-              <User size={14} />
+              <User size={14} aria-hidden="true" />
               Ingresar
             </NavLink>
           )}

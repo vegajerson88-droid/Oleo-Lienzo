@@ -1,0 +1,36 @@
+@import url("https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;1,9..144,500&family=Work+Sans:wght@400;500;600&family=Space+Mono:wght@400;700&display=swap");
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #1c1b19;
+  --color-wall: #e8e3d5;
+  --color-paper: #f7f4ec;
+  --color-forest: #2b3a2f;
+  --color-forest-dark: #1c2620;
+  --color-gold: #c9a227;
+  --color-sienna: #a64b2a;
+
+  --font-display: "Fraunces", serif;
+  --font-body: "Work Sans", sans-serif;
+  --font-mono: "Space Mono", monospace;
+}
+
+body {
+  @apply bg-wall text-ink font-body;
+}
+
+h1, h2, h3 {
+  @apply font-display font-semibold;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-gold);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

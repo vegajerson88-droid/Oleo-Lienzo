@@ -1,0 +1,16 @@
+<svg viewBox="0 0 800 1000" xmlns="http://www.w3.org/2000/svg">
+<defs><linearGradient id="bg5" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#F5F2EA"/>
+<stop offset="100%" stop-color="#EFEFEF"/>
+</linearGradient></defs>
+<rect width="800" height="1000" fill="url(#bg5)"/>
+<rect x="593.4" y="795.2" width="248.5" height="208.0" fill="#141414" opacity="0.96" transform="rotate(4.4 717.7 899.2)"/>
+<rect x="199.2" y="51.9" width="91.4" height="134.4" fill="#B5342A" opacity="0.85" transform="rotate(-6.4 244.9 119.0)"/>
+<rect x="199.5" y="731.2" width="141.6" height="96.4" fill="#2B2B2B" opacity="0.79" transform="rotate(4.8 270.3 779.4)"/>
+<rect x="111.0" y="617.5" width="85.3" height="60.4" fill="#141414" opacity="0.80" transform="rotate(-4.6 153.7 647.6)"/>
+<rect x="785.9" y="872.4" width="117.9" height="252.3" fill="#B5342A" opacity="0.80" transform="rotate(7.5 844.9 998.6)"/>
+<rect x="157.5" y="965.1" width="136.6" height="64.3" fill="#2B2B2B" opacity="0.79" transform="rotate(-5.7 225.8 997.3)"/>
+<rect x="52.1" y="301.4" width="180.6" height="60.7" fill="#EFE9DA" opacity="0.77" transform="rotate(-2.3 142.4 331.7)"/>
+<rect x="244.9" y="696.4" width="97.0" height="154.5" fill="#B5342A" opacity="0.76" transform="rotate(7.6 293.3 773.7)"/>
+<circle cx="400.0" cy="450.0" r="90" fill="#B5342A" opacity="0.9"/>
+</svg>

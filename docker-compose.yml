@@ -27,11 +27,11 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    env_file:
+      - ./backend/.env
     environment:
+      # Dentro de Docker, PostgreSQL se alcanza por el nombre del servicio.
       DATABASE_URL: postgresql+psycopg://oleo:oleo@db:5432/oleo_lienzo
-      JWT_SECRET_KEY: clave-solo-para-desarrollo-local-cambiala-en-produccion
-      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
-      FRONTEND_URL: http://localhost:5173
     ports:
       - "8000:8000"
     command: sh -c "python seed.py && uvicorn app.main:app --host 0.0.0.0 --port 8000"

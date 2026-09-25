@@ -8,12 +8,19 @@ SQLite en memoria, por eso el motor detecta el dialecto y solo aplica las
 opciones de pool cuando la base lo soporta.
 """
 
+import asyncio
+import sys
 from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import get_settings
+
+
+if sys.platform == "win32":
+    asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
 
 settings = get_settings()
 

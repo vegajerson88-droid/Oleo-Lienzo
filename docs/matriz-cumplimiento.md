@@ -205,7 +205,7 @@ sobre FastAPI.
 | **9. Pruebas** ||||
 | 9.1 | Pruebas con Pytest que cubren CRUD y autenticación | ✅ | 141 pruebas, verdes en SQLite y PostgreSQL |
 | **10. Frontend React** ||||
-| 10.1 | Cliente HTTP centralizado con la URL por variable de entorno | ✅ | `src/services/api.js`, `VITE_API_URL` |
+| 10.1 | Cliente HTTP centralizado con la URL por variable de entorno | ✅ | `frontend/src/services/api.js`, `VITE_API_URL` |
 | 10.2 | CRUD completamente funcional desde la interfaz | ✅ | Paneles de obras, servicios y usuarios |
 | 10.3 | Formularios que reflejan los esquemas y validan en cliente | ✅ | `validators.js` como complemento, no sustituto |
 | 10.4 | Estados de carga y de error bien gestionados | ✅ | `useRecurso`, Skeleton, Alert, Toast y EmptyState |

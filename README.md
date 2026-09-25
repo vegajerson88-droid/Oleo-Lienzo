@@ -132,9 +132,11 @@ python3 -m venv venv
 source venv/bin/activate          # En Windows:  venv\Scripts\activate
 
 pip install -r requirements.txt
-
-cp .env.example .env
 ```
+
+El repositorio ya incluye `backend/.env` para desarrollo local. Si se crea una
+copia nueva, usa `copy .env.example .env` en PowerShell o `cp .env.example .env`
+en Git Bash.
 
 Abre `backend/.env` y ajusta como mínimo estas dos líneas:
 
@@ -142,6 +144,18 @@ Abre `backend/.env` y ajusta como mínimo estas dos líneas:
 DATABASE_URL=postgresql+psycopg://oleo:tu_contrasena_segura@localhost:5432/oleo_lienzo
 JWT_SECRET_KEY=<pega aquí una clave larga y aleatoria>
 ```
+
+El nombre de la base de datos es el último segmento de `DATABASE_URL`:
+`oleo_lienzo`. Si tu PostgreSQL local ya tiene otro usuario o contraseña,
+actualiza esa URL para que coincida. En una instalación nueva puedes crearla así:
+
+```sql
+CREATE ROLE oleo WITH LOGIN PASSWORD 'oleo';
+CREATE DATABASE oleo_lienzo OWNER oleo ENCODING 'UTF8';
+```
+
+Si el rol ya existe, usa `ALTER ROLE oleo WITH PASSWORD 'oleo';` en lugar de
+`CREATE ROLE`.
 
 Para generar la clave:
 
@@ -165,14 +179,15 @@ python seed.py
 
 ### 4. Frontend
 
-Desde la raíz del proyecto:
+Desde la carpeta del frontend:
 
 ```bash
+cd ../frontend
 npm install
 cp .env.example .env
 ```
 
-El `.env` por defecto ya apunta a `http://localhost:8000`, que es donde
+El archivo `frontend/.env` ya apunta a `http://localhost:8000`, que es donde
 arranca el backend.
 
 ---
@@ -194,6 +209,7 @@ uvicorn app.main:app --reload
 **Terminal 2 — frontend:**
 
 ```bash
+cd frontend
 npm run dev
 ```
 
@@ -244,7 +260,7 @@ Ver `backend/.env.example` para la lista completa y comentada.
 Las que no son obligatorias se pueden dejar vacías: la aplicación arranca
 igual y avisa de que esa integración está desactivada.
 
-### Frontend — `.env`
+### Frontend — `frontend/.env`
 
 | Variable | Para qué |
 |---|---|
@@ -257,6 +273,12 @@ igual y avisa de que esa integración está desactivada.
 ---
 
 ## Base de datos
+
+Para desarrollo local, `DATABASE_URL` debe usar `localhost`. Con Docker Compose,
+el archivo `backend/.env` se carga automáticamente y Compose sustituye solo el
+host por `db`, porque ese es el nombre del servicio dentro de la red Docker.
+Puedes levantar esa alternativa con `docker compose up --build` si Docker
+Desktop está instalado.
 
 15 tablas relacionadas:
 
@@ -449,16 +471,19 @@ Oleo-Lienzo/
 │   ├── seed.py
 │   ├── requirements.txt
 │   └── .env.example
-├── src/
-│   ├── components/
-│   │   ├── ui/            · sistema de diseño reutilizable
-│   │   └── graficos/      · gráficos e indicadores
-│   ├── pages/
-│   │   └── panel/         · módulos de los paneles
-│   ├── context/           · autenticación y avisos
-│   ├── hooks/             · carga de datos con estados de carga y error
-│   ├── services/api.js    · cliente HTTP centralizado
-│   └── utils/validators.js
+├── frontend/
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── ui/        · sistema de diseño reutilizable
+│   │   │   └── graficos/  · gráficos e indicadores
+│   │   ├── pages/
+│   │   │   └── panel/     · módulos de los paneles
+│   │   ├── context/       · autenticación y avisos
+│   │   ├── hooks/         · carga de datos con estados de carga y error
+│   │   ├── services/api.js · cliente HTTP centralizado
+│   │   └── utils/validators.js
+│   ├── package.json
+│   └── .env.example
 ├── postman/
 ├── docs/
 └── README.md

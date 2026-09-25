@@ -6,7 +6,7 @@
  * gestionan las descargas de archivos.
  *
  * La URL del backend NO está escrita en el código: llega de la variable de
- * entorno VITE_API_URL (ver .env.example en la raíz del proyecto).
+ * entorno VITE_API_URL (ver frontend/.env.example).
  */
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const BASE = `${API_URL}/api`;

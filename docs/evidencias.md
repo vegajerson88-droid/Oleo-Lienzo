@@ -10,7 +10,7 @@ aparece aquí corresponde a funcionalidad realmente implementada y probada.
 cd backend && source venv/bin/activate && uvicorn app.main:app --reload
 
 # Terminal 2
-npm run dev
+cd frontend && npm run dev
 ```
 
 ---

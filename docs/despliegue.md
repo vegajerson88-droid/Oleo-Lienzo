@@ -101,8 +101,8 @@ El frontend es un sitio estático: se compila y se sirven los archivos.
 
 | Ajuste | Valor |
 |---|---|
-| Build | `npm install && npm run build` |
-| Directorio publicado | `dist` |
+| Build | `cd frontend && npm install && npm run build` |
+| Directorio publicado | `frontend/dist` |
 
 **Variable de entorno:**
 
@@ -188,8 +188,8 @@ docker compose up --build
 - API en http://localhost:8000
 - PostgreSQL en el puerto 5432
 
-El frontend sigue aparte, con `npm run dev`, para conservar la recarga en
-caliente de Vite.
+El frontend sigue aparte, con `cd frontend && npm run dev`, para conservar la
+recarga en caliente de Vite.
 
 ---
 

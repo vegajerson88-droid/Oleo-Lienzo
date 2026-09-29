@@ -143,6 +143,104 @@ async def test_dashboard_con_rango_de_fechas_invertido_422(client, token_admin):
     assert resp.status_code == 422
 
 
+# ── Filtros del dashboard (requisito 13 del quinto avance) ───────────────
+def _indicador(data: dict, clave: str) -> float:
+    return next(i for i in data["indicadores"] if i["clave"] == clave)["valor"]
+
+
+async def _dashboard(client, token, consulta: str = "") -> dict:
+    resp = await client.get(f"/api/dashboard{consulta}", headers=cabecera(token))
+    assert resp.status_code == 200
+    return resp.json()
+
+
+async def test_dashboard_filtra_por_estado(client, obra, token_admin, id_cliente):
+    venta = await _venta(client, token_admin, obra, id_cliente)
+    anular = await client.patch(
+        f"/api/ventas/{venta['id']}/estado",
+        json={"nuevo_estado": "anulada"},
+        headers=cabecera(token_admin),
+    )
+    assert anular.status_code == 200
+
+    anuladas = await _dashboard(client, token_admin, "?estado=anulada")
+    pagadas = await _dashboard(client, token_admin, "?estado=pagada")
+
+    assert _indicador(anuladas, "total_ventas") == 1
+    assert _indicador(anuladas, "ingresos") == 0
+    assert _indicador(pagadas, "total_ventas") == 0
+
+
+async def test_dashboard_filtra_por_cliente(client, obra, token_admin, id_cliente):
+    await _venta(client, token_admin, obra, id_cliente)
+
+    suyo = await _dashboard(client, token_admin, f"?cliente_id={id_cliente}")
+    ajeno = await _dashboard(client, token_admin, f"?cliente_id={id_cliente + 999}")
+
+    assert _indicador(suyo, "total_ventas") == 1
+    assert _indicador(ajeno, "total_ventas") == 0
+
+
+async def test_dashboard_filtra_por_obra_y_por_servicio(
+    client, obra, servicio, token_admin, id_cliente
+):
+    await _venta(client, token_admin, obra, id_cliente)
+
+    por_obra = await _dashboard(client, token_admin, f"?obra_id={obra['id']}")
+    por_otra_obra = await _dashboard(client, token_admin, f"?obra_id={obra['id'] + 999}")
+    por_servicio = await _dashboard(client, token_admin, f"?servicio_id={servicio['id']}")
+
+    assert _indicador(por_obra, "total_ventas") == 1
+    assert _indicador(por_otra_obra, "total_ventas") == 0
+    # La venta no incluía el servicio, así que no debe contarla.
+    assert _indicador(por_servicio, "total_ventas") == 0
+
+
+async def test_el_filtro_de_obra_no_duplica_los_importes(
+    client, obra, servicio, token_admin, id_cliente
+):
+    """Una venta con varias líneas se cuenta una vez, no una por línea.
+
+    Si el filtro de obra se resolviera con un JOIN al detalle, esta venta
+    aparecería dos veces y tanto el conteo como los importes se duplicarían.
+    """
+    resp = await client.post(
+        "/api/ventas",
+        json={
+            "cliente_id": id_cliente,
+            "detalles": [
+                {"obra_id": obra["id"], "cantidad": 1},
+                {"servicio_id": servicio["id"], "cantidad": 1},
+            ],
+        },
+        headers=cabecera(token_admin),
+    )
+    venta = resp.json()
+    # Solo el importe de una venta pagada cuenta como ingreso.
+    await client.patch(
+        f"/api/ventas/{venta['id']}/estado",
+        json={"nuevo_estado": "pagada"},
+        headers=cabecera(token_admin),
+    )
+
+    filtrado = await _dashboard(client, token_admin, f"?obra_id={obra['id']}")
+    assert _indicador(filtrado, "total_ventas") == 1
+    assert _indicador(filtrado, "ingresos") == pytest.approx(float(venta["total"]))
+
+
+async def test_el_cliente_no_puede_espiar_el_dashboard_de_otro(client, token_cliente):
+    """Para el rol cliente, `cliente_id` se ignora y se fuerza el propio."""
+    propio = await _dashboard(client, token_cliente)
+    intento = await _dashboard(client, token_cliente, "?cliente_id=99999")
+    assert propio["indicadores"] == intento["indicadores"]
+
+
+async def test_dashboard_rechaza_filtros_invalidos(client, token_admin):
+    for consulta in ("?estado=inexistente", "?obra_id=0", "?servicio_id=-1", "?cliente_id=0"):
+        resp = await client.get(f"/api/dashboard{consulta}", headers=cabecera(token_admin))
+        assert resp.status_code == 422, consulta
+
+
 async def test_dashboard_requiere_sesion_401(client):
     assert (await client.get("/api/dashboard")).status_code == 401
 

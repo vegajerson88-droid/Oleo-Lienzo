@@ -15,7 +15,7 @@ from app.models.usuario import Usuario
 from app.models.venta import EstadoVenta
 from app.schemas.common import Page
 from app.schemas.venta import VentaCambioEstado, VentaCreate, VentaFiltros, VentaOut
-from app.services import email as email_service
+from app.services import tareas
 
 router = APIRouter(prefix="/ventas", tags=["Ventas"], responses=RESPUESTAS_AUTH)
 
@@ -149,7 +149,6 @@ async def cambiar_estado_venta(
         raise HTTPException(status_code=exc.status_code, detail=exc.detail)
 
     if venta.estado == EstadoVenta.pagada:
-        background_tasks.add_task(
-            email_service.enviar_confirmacion_compra, venta, venta.factura_numero
-        )
+        # La tarea recibe el id y abre su propia sesión (ver services/tareas.py).
+        background_tasks.add_task(tareas.confirmar_compra, venta.id)
     return venta

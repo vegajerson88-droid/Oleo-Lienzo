@@ -36,7 +36,7 @@ function PanelAdministrador() {
   const [pestana, setPestana] = useState("dashboard");
 
   const vistas = {
-    dashboard: <DashboardPanel token={token} />,
+    dashboard: <DashboardPanel token={token} rol="administrador" />,
     ventas: <VentasManager token={token} />,
     facturas: <FacturasManager token={token} puedeGestionar />,
     reportes: <ReportesPanel token={token} />,

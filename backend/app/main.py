@@ -17,10 +17,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 from slowapi.middleware import SlowAPIMiddleware
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.config import get_settings
 from app.core.exceptions import DomainError
 from app.core.limiter import limiter
+from app.core.middlewares import CabecerasDeSeguridad, RegistroDePeticiones
 from app.database import init_models
 from app.routers import (
     auth,
@@ -174,28 +176,57 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
-    expose_headers=["Content-Disposition"],  # el navegador necesita leerla para descargar PDF/Excel
+    expose_headers=[
+        "Content-Disposition",  # el navegador la necesita para descargar PDF/Excel
+        "X-Request-ID",  # permite correlacionar una respuesta con el log
+    ],
 )
 
-
-@app.middleware("http")
-async def cabeceras_de_seguridad(request: Request, call_next):
-    """Cabeceras defensivas en todas las respuestas."""
-    response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
-    response.headers["Referrer-Policy"] = "no-referrer"
-    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
-    return response
+# Se registran de dentro hacia fuera: el de logging va el último para que
+# envuelva a los demás y mida el tiempo real de toda la petición.
+app.add_middleware(CabecerasDeSeguridad)
+app.add_middleware(RegistroDePeticiones)
 
 
 # ── Manejadores de error: un único formato para toda la API ──────────────
+# Todo error sale como {"error": "<tipo>", "detail": <mensaje o lista>}.
+NOMBRES_DE_ERROR = {
+    400: "BadRequest",
+    401: "Unauthorized",
+    403: "Forbidden",
+    404: "NotFound",
+    405: "MethodNotAllowed",
+    409: "Conflict",
+    422: "ValidationError",
+    429: "RateLimitExceeded",
+}
+
+
+def nombre_de_error(status_code: int) -> str:
+    """El mismo nombre para un código dado, lo lance quien lo lance."""
+    return NOMBRES_DE_ERROR.get(status_code, "HTTPError")
+
+
 @app.exception_handler(DomainError)
 async def manejar_error_de_dominio(request: Request, exc: DomainError):
     """Traduce las excepciones de negocio al código HTTP que les corresponde."""
     return JSONResponse(
         status_code=exc.status_code,
-        content={"error": exc.__class__.__name__, "detail": exc.detail},
+        content={"error": nombre_de_error(exc.status_code), "detail": exc.detail},
+    )
+
+
+@app.exception_handler(StarletteHTTPException)
+async def manejar_http_exception(request: Request, exc: StarletteHTTPException):
+    """Da a los `HTTPException` el mismo cuerpo que al resto de errores.
+
+    Sin esto, un 404 saldría como `{"detail": ...}` y un 422 como
+    `{"error": ..., "detail": ...}`: dos formatos distintos en la misma API.
+    """
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": nombre_de_error(exc.status_code), "detail": exc.detail},
+        headers=getattr(exc, "headers", None),
     )
 
 
@@ -203,7 +234,7 @@ async def manejar_error_de_dominio(request: Request, exc: DomainError):
 async def manejar_error_de_validacion(request: Request, exc: RequestValidationError):
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-        content={"error": "ValidationError", "detail": jsonable_encoder(exc.errors())},
+        content={"error": nombre_de_error(422), "detail": jsonable_encoder(exc.errors())},
     )
 
 
@@ -212,7 +243,7 @@ async def manejar_limite_de_peticiones(request: Request, exc: RateLimitExceeded)
     return JSONResponse(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         content={
-            "error": "RateLimitExceeded",
+            "error": nombre_de_error(429),
             "detail": "Has hecho demasiadas peticiones. Espera un momento e inténtalo de nuevo.",
         },
     )

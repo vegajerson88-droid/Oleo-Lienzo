@@ -1,205 +1,210 @@
-# Despliegue
+# Despliegue en la nube
 
-Guía para poner **Óleo & Lienzo** en producción. Los ejemplos usan
-[Railway](https://railway.app), que es la plataforma recomendada en el quinto
-avance, pero el procedimiento es el mismo en Render, Fly.io o cualquier
-servicio que acepte contenedores.
+Guía para poner Óleo & Lienzo en producción con tres servicios gratuitos:
 
-El proyecto son **tres piezas** que se despliegan por separado:
+| Capa | Plataforma | Por qué |
+|---|---|---|
+| Base de datos | **Neon** | PostgreSQL 16 gestionado, plan gratuito sin caducidad |
+| Backend | **Render** | Despliega desde el `Dockerfile` del repositorio |
+| Frontend | **Vercel** | Construye Vite y sirve por CDN |
 
-```
-┌──────────────┐        ┌──────────────┐        ┌──────────────┐
-│   Frontend   │ ─────▶ │   Backend    │ ─────▶ │  PostgreSQL  │
-│ sitio estático│        │  contenedor  │        │   gestionado │
-└──────────────┘        └──────────────┘        └──────────────┘
-```
+Tiempo estimado: **30–40 minutos**. El orden importa: la base primero, porque
+el backend la necesita; el frontend al final, porque necesita la URL del
+backend.
 
----
-
-## 1. Base de datos
-
-En Railway: **New → Database → PostgreSQL**.
-
-La plataforma genera una variable `DATABASE_URL` con este formato:
-
-```
-postgresql://usuario:contraseña@host:puerto/base
-```
-
-El backend usa **psycopg 3 en modo asíncrono**, así que hay que cambiar el
-prefijo:
-
-```
-postgresql+psycopg://usuario:contraseña@host:puerto/base
-```
-
-> Es el error más habitual al desplegar este proyecto. Sin `+psycopg`,
-> SQLAlchemy intenta cargar un driver síncrono y el arranque falla.
+> **Antes de empezar**, sube la rama a GitHub. Render y Vercel despliegan desde
+> el repositorio, no desde tu máquina.
 
 ---
 
-## 2. Backend
+## 1. Base de datos en Neon
 
-**New → GitHub Repo →** este repositorio. Railway detecta `railway.json` y
-construye con `backend/Dockerfile`.
+1. Entra en <https://neon.tech> y crea una cuenta (puedes usar GitHub).
+2. **Create project**:
+   - Nombre: `oleo-lienzo`
+   - PostgreSQL: **16**
+   - Región: la más cercana (`AWS us-east-2` sirve bien desde Colombia).
+3. Al terminar, Neon muestra la cadena de conexión. Cópiala: solo se enseña
+   entera una vez.
 
-### Variables de entorno
+Vendrá con esta forma:
 
-Obligatorias:
+```
+postgresql://usuario:contraseña@ep-algo-123456.us-east-2.aws.neon.tech/neondb?sslmode=require
+```
+
+**Hay que adaptarla** antes de usarla. El proyecto usa el driver asíncrono
+`psycopg`, así que cambia el esquema del principio:
+
+```
+postgresql+psycopg://usuario:contraseña@ep-algo-123456.us-east-2.aws.neon.tech/neondb?sslmode=require
+```
+
+> Es el error más común de todo el despliegue. Si dejas `postgresql://` a
+> secas, el backend arranca y falla en la primera consulta.
+
+Guarda esa cadena: es el valor de `DATABASE_URL`.
+
+### ¿Hay que ejecutar el script SQL?
+
+No hace falta. La aplicación crea las tablas al arrancar. Si prefieres hacerlo
+de forma explícita —y así compruebas el entregable del script SQL—, desde el
+**SQL Editor** de Neon pega el contenido de
+`backend/sql/schema_postgresql.sql` y ejecútalo.
+
+---
+
+## 2. Backend en Render
+
+1. Entra en <https://render.com> y conecta tu cuenta de GitHub.
+2. **New → Blueprint**, elige el repositorio `Oleo-Lienzo` y la rama `main`.
+   Render detecta el archivo `render.yaml` de la raíz.
+3. Te pedirá las variables marcadas como pendientes. Rellena:
 
 | Variable | Valor |
 |---|---|
-| `DATABASE_URL` | La de PostgreSQL, con el prefijo `postgresql+psycopg://` |
-| `JWT_SECRET_KEY` | Una clave nueva: `openssl rand -hex 32` |
-| `ENVIRONMENT` | `production` |
-| `CORS_ORIGINS` | La URL pública del frontend |
-| `FRONTEND_URL` | La misma URL del frontend |
+| `DATABASE_URL` | La cadena de Neon **con `postgresql+psycopg://`** |
+| `CORS_ORIGINS` | Déjalo en `http://localhost:5173` de momento. Se corrige en el paso 4 |
+| `FRONTEND_URL` | Igual: se corrige después |
+| `GROQ_API_KEY` | Tu clave de <https://console.groq.com/keys>. Si la dejas vacía, el chatbot responde en modo local |
 
-Opcionales, según qué integraciones quieras activas:
+`JWT_SECRET_KEY` la genera Render sola y la conserva entre despliegues. No la
+escribas tú.
 
-| Variable | Para qué |
-|---|---|
-| `GROQ_API_KEY` | Chatbot con IA |
-| `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` | Pagos |
-| `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASSWORD` | Correos |
-| `IVA_PORCENTAJE` | IVA aplicado (19 por defecto) |
+4. **Apply**. La primera construcción tarda entre 5 y 8 minutos: compila la
+   imagen Docker e instala las dependencias.
 
-> **Nunca** reutilices la `JWT_SECRET_KEY` de desarrollo. Quien la conozca
-> puede firmar tokens válidos y entrar como cualquier usuario.
+### Poblar la base la primera vez
 
-### Primer arranque
-
-El `startCommand` de `railway.json` ejecuta `python seed.py` antes de
-levantar el servidor. Eso crea las tablas, los permisos, los roles y los
-usuarios de prueba. Es idempotente: en los siguientes despliegues no duplica
-nada.
-
-**Cambia las contraseñas de prueba en cuanto la aplicación esté en línea.**
-Son públicas: están en este repositorio.
-
-### Comprobación
+Cuando el servicio esté activo, abre la pestaña **Shell** de Render y ejecuta:
 
 ```bash
-curl https://tu-backend.up.railway.app/api/sistema/salud
+python seed.py
 ```
 
-Debe responder:
+Esto crea los permisos, los roles, los usuarios de prueba, el catálogo, las
+ventas, facturas y PQR de ejemplo, y entrena el modelo de sugerencia de
+precios. Es idempotente: ejecutarlo dos veces no duplica nada.
 
-```json
-{"estado":"ok","servicio":"Óleo & Lienzo API","version":"5.0.0"}
+> **Cámbiale la contraseña al administrador** después de sembrar. Las
+> credenciales del seed son públicas: están en el README y en el manual.
+
+### Comprobar que vive
+
+```bash
+curl https://oleo-lienzo-api.onrender.com/api/sistema/salud
+# {"estado":"ok","servicio":"Óleo & Lienzo API","version":"5.0.0"}
 ```
 
-La documentación queda en `https://tu-backend.up.railway.app/docs`.
+Y abre `https://oleo-lienzo-api.onrender.com/docs` en el navegador: debe salir
+el Swagger con las 60 operaciones.
+
+> **El plan gratuito de Render duerme el servicio** tras 15 minutos sin
+> tráfico. La primera petición después de dormir tarda entre 30 y 50 segundos
+> en responder. Antes de la sustentación, **abre la URL cinco minutos antes**
+> para despertarlo.
 
 ---
 
-## 3. Frontend
+## 3. Frontend en Vercel
 
-El frontend es un sitio estático: se compila y se sirven los archivos.
+1. Entra en <https://vercel.com> y conecta GitHub.
+2. **Add New → Project**, elige el repositorio.
+3. **Importante:** en *Root Directory* selecciona **`frontend`**. Si lo dejas
+   en la raíz, Vercel no encontrará el `package.json`.
+4. El resto lo toma de `frontend/vercel.json` (framework Vite, `npm ci`,
+   salida en `dist`).
+5. En **Environment Variables** añade:
 
-**Comandos:**
-
-| Ajuste | Valor |
+| Variable | Valor |
 |---|---|
-| Build | `cd frontend && npm install && npm run build` |
-| Directorio publicado | `frontend/dist` |
+| `VITE_API_URL` | `https://oleo-lienzo-api.onrender.com` — **sin barra final y sin `/api`** |
+| `VITE_WHATSAPP_NUMERO` | El número en formato internacional sin el `+` |
 
-**Variable de entorno:**
+6. **Deploy**. Tarda uno o dos minutos.
 
-```env
-VITE_API_URL=https://tu-backend.up.railway.app
-```
-
-> Vite incrusta las variables **durante la compilación**, no al arrancar.
-> Si cambias `VITE_API_URL`, hay que volver a compilar.
-
-### Rutas del navegador
-
-React Router maneja rutas como `/catalogo` en el cliente. El servidor debe
-devolver `index.html` para cualquier ruta que no sea un archivo, o recargar
-la página dará 404.
-
-En Netlify, `public/_redirects`:
-
-```
-/*    /index.html   200
-```
-
-En Vercel, `vercel.json`:
-
-```json
-{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
-```
+Vercel te dará una URL del estilo `https://oleo-lienzo.vercel.app`.
 
 ---
 
-## 4. Cerrar el círculo del CORS
+## 4. Cerrar el círculo: CORS
 
-Con la URL del frontend ya conocida, vuelve al backend y ajusta:
+Ahora que existe la URL del frontend, hay que autorizarla en el backend. Sin
+esto, el navegador bloqueará todas las llamadas y la aplicación se verá bien
+pero no cargará ningún dato.
 
-```env
-CORS_ORIGINS=https://tu-frontend.up.railway.app
-FRONTEND_URL=https://tu-frontend.up.railway.app
+En Render, **Environment**, edita:
+
+```
+CORS_ORIGINS = https://oleo-lienzo.vercel.app
+FRONTEND_URL = https://oleo-lienzo.vercel.app
 ```
 
-Sin esto el navegador bloqueará todas las llamadas a la API. `CORS_ORIGINS`
-admite varias URL separadas por comas.
+Si quieres permitir también las URL de vista previa de Vercel, sepáralas por
+comas. **El comodín `*` no se acepta**: la aplicación lo rechaza al arrancar,
+a propósito.
+
+Render reinicia el servicio solo. Espera a que vuelva a estar activo y prueba
+la aplicación de punta a punta.
 
 ---
 
-## 5. Webhook de Stripe
+## 5. Comprobación final
 
-En el panel de Stripe → **Developers → Webhooks → Add endpoint**:
+Recorre esta lista en la URL pública, no en local:
 
-- URL: `https://tu-backend.up.railway.app/api/pagos/webhook`
-- Eventos: `checkout.session.completed`, `checkout.session.expired`,
-  `charge.refunded`
+| # | Qué probar | Qué debe pasar |
+|---|---|---|
+| 1 | Abrir la página de inicio | Carga el carrusel con las diez obras |
+| 2 | Entrar al catálogo | Salen las obras con sus precios |
+| 3 | Iniciar sesión como administrador | El navbar muestra el nombre |
+| 4 | Abrir el dashboard | Salen los indicadores y los gráficos con datos |
+| 5 | Descargar el PDF de una factura | Se descarga y se abre |
+| 6 | Exportar el reporte a Excel | Se descarga el `.xlsx` |
+| 7 | Escribir al chatbot | Responde (con IA si hay clave) |
+| 8 | Abrir `/docs` del backend | Swagger con las 60 operaciones |
+| 9 | Recargar estando en `/catalogo` | **No debe dar 404** |
 
-Copia el `whsec_...` que genera a la variable `STRIPE_WEBHOOK_SECRET`.
-
-> El webhook **no** lleva autenticación JWT: quien llama es Stripe, no un
-> usuario. Su autenticidad se comprueba verificando la firma criptográfica de
-> la cabecera `Stripe-Signature`. Sin esa clave, el endpoint rechaza todo con
-> un 400, que es el comportamiento correcto.
+El punto 9 comprueba el rewrite de `vercel.json`: sin él, recargar en una ruta
+interna daría error, porque el servidor buscaría un archivo que no existe.
 
 ---
 
 ## 6. Repaso de seguridad antes de publicar
 
-- [ ] `JWT_SECRET_KEY` nueva y aleatoria, distinta de la de desarrollo.
-- [ ] `ENVIRONMENT=production`.
-- [ ] Contraseñas de los usuarios de prueba cambiadas.
-- [ ] `CORS_ORIGINS` con las URL exactas, nunca `*`.
-- [ ] Ningún `.env` subido al repositorio (`git ls-files | grep .env` solo
-      debe devolver los `.env.example`).
-- [ ] Claves de Stripe en modo **live** solo cuando vayas a cobrar de verdad.
-- [ ] La base de datos no expuesta a internet, solo accesible desde el backend.
-
----
-
-## 7. Con Docker en tu propia máquina
-
-Para levantar PostgreSQL y el backend juntos:
-
-```bash
-docker compose up --build
-```
-
-- API en http://localhost:8000
-- PostgreSQL en el puerto 5432
-
-El frontend sigue aparte, con `cd frontend && npm run dev`, para conservar la
-recarga en caliente de Vite.
+- [ ] Ningún archivo `.env` subido al repositorio (`git ls-files | grep .env`)
+- [ ] `JWT_SECRET_KEY` generada por Render, no copiada de la de desarrollo
+- [ ] `CORS_ORIGINS` con la lista explícita de orígenes, sin `*`
+- [ ] Contraseña del administrador cambiada tras el seed
+- [ ] `ENVIRONMENT=production` en Render
+- [ ] La clave de Groq solo en las variables de Render, nunca en el código
+- [ ] Si usas Stripe, solo claves de prueba (`sk_test_...`)
 
 ---
 
 ## Problemas frecuentes
 
-| Síntoma | Causa | Solución |
+| Síntoma | Causa casi segura | Solución |
 |---|---|---|
-| `Can't load plugin: sqlalchemy.dialects:postgresql.psycopg` | Falta el prefijo del driver | Usa `postgresql+psycopg://` |
-| El navegador bloquea las llamadas por CORS | El origen no está permitido | Añade la URL del frontend a `CORS_ORIGINS` |
-| `net::ERR_CONNECTION_REFUSED` en el frontend | `VITE_API_URL` apunta a localhost | Recompila con la URL pública |
-| Recargar `/catalogo` da 404 | Falta la redirección al `index.html` | Configura el *rewrite* del apartado 3 |
-| 401 en todas las peticiones tras desplegar | Cambió la `JWT_SECRET_KEY` | Es lo esperado: los tokens antiguos ya no valen; vuelve a iniciar sesión |
-| El webhook de Stripe responde 400 | Falta o no coincide `STRIPE_WEBHOOK_SECRET` | Copia el `whsec_` del endpoint concreto |
+| El backend arranca pero falla al consultar | La `DATABASE_URL` dice `postgresql://` | Cámbiala a `postgresql+psycopg://` |
+| `sslmode` no soportado | Falta el parámetro o sobra | Deja `?sslmode=require` tal como lo da Neon |
+| El frontend carga pero sin datos | CORS mal configurado | Revisa que `CORS_ORIGINS` tenga la URL exacta de Vercel, con `https://` y sin barra final |
+| Error de CORS aunque la URL parece bien | Barra final de más | `https://app.vercel.app/` ≠ `https://app.vercel.app` |
+| Recargar en `/catalogo` da 404 | Falta el rewrite | Comprueba que `frontend/vercel.json` se subió al repositorio |
+| La primera petición tarda 40 segundos | Render durmió el servicio | Normal en el plan gratuito. Despiértalo antes de la demostración |
+| `Application failed to respond` | La aplicación no escucha en `$PORT` | El `Dockerfile` ya lo resuelve; comprueba que no se haya modificado |
+| El backend no arranca y el log dice `JWT_SECRET_KEY` | Falta la variable con `ENVIRONMENT=production` | Es deliberado: genera una clave y configúrala |
+| El chatbot responde pero dice `generado_por_ia: false` | Falta `GROQ_API_KEY` | Añádela en Render. Sin ella funciona, pero en modo local |
+
+---
+
+## Despliegue local con Docker
+
+Para probar la imagen de producción sin subir nada:
+
+```bash
+docker compose up --build
+```
+
+Levanta PostgreSQL y el backend juntos. El frontend sigue aparte, con
+`cd frontend && npm run dev`, para conservar la recarga en caliente.

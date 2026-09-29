@@ -1,39 +1,49 @@
+# ═════════════════════════════════════════════════════════════════════════
+#  Óleo & Lienzo — dependencias del backend
+#
+#  Las versiones van FIJADAS (==) a propósito: garantiza que el despliegue
+#  instale exactamente lo mismo que se probó en desarrollo. Son las versiones
+#  con las que pasan las 161 pruebas de la suite.
+#
+#  Instalación:  pip install -r requirements.txt
+# ═════════════════════════════════════════════════════════════════════════
+
 # ── Núcleo de la API ──────────────────────────────────────────────────────
-fastapi>=0.115
-uvicorn[standard]>=0.30
-python-multipart>=0.0.9
+fastapi==0.141.1
+uvicorn[standard]==0.54.0
+python-multipart==0.0.32     # formularios OAuth2 del login
 
 # ── Base de datos: PostgreSQL con SQLAlchemy 2.x async ────────────────────
-sqlalchemy>=2.0
-psycopg[binary]>=3.2        # driver PostgreSQL (async) — reemplaza a pymysql
-greenlet>=3.0               # requerido por SQLAlchemy en modo async
+SQLAlchemy==2.1.1
+psycopg[binary]==3.3.6       # driver PostgreSQL asíncrono
+greenlet==3.5.6              # requerido por SQLAlchemy en modo async
 
 # ── Validación y configuración ────────────────────────────────────────────
-pydantic>=2.7
-pydantic[email]>=2.7
-pydantic-settings>=2.3
-python-dotenv>=1.0
+pydantic[email]==2.13.5
+pydantic-settings==2.15.0
+python-dotenv==1.2.3
 
 # ── Seguridad: JWT y hashing de contraseñas ───────────────────────────────
-python-jose[cryptography]>=3.3
-passlib[bcrypt]>=1.7
-bcrypt==4.0.1               # fijado: passlib 1.7.4 no soporta bcrypt>=4.1
-slowapi>=0.1.9              # limita intentos de login por IP
+python-jose[cryptography]==3.5.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1                # fijado: passlib 1.7.4 no soporta bcrypt>=4.1
+slowapi==0.1.10              # limita intentos de login por IP
 
 # ── Integraciones externas ────────────────────────────────────────────────
-httpx>=0.27                 # cliente HTTP async (Groq)
-stripe>=10.0                # pasarela de pago
+httpx==0.28.1                # cliente HTTP async (Groq)
+stripe==15.6.1               # pasarela de pago
 
 # ── Reportes y documentos ─────────────────────────────────────────────────
-reportlab>=4.0              # facturas y reportes en PDF
-openpyxl>=3.1               # reportes en Excel (.xlsx)
+reportlab==5.0.1             # facturas y reportes en PDF
+openpyxl==3.1.5              # reportes en Excel (.xlsx)
 
 # ── IA local (sugerencia de precios) ──────────────────────────────────────
-scikit-learn>=1.4
-joblib>=1.4
-numpy>=1.26
+scikit-learn==1.9.1
+joblib==1.6.0
+numpy==2.5.3
 
-# ── Pruebas ───────────────────────────────────────────────────────────────
-pytest>=8.0
-pytest-asyncio>=0.23
-aiosqlite>=0.20             # SQLite en memoria para la suite de pruebas
+# ── Pruebas y estilo (no hacen falta en producción) ───────────────────────
+pytest==9.1.1
+pytest-asyncio==1.4.0
+aiosqlite==0.22.1            # SQLite en memoria para la suite de pruebas
+ruff==0.16.9                 # linter y formateador

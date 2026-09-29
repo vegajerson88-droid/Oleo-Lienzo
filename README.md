@@ -367,7 +367,7 @@ source venv/bin/activate
 pytest -v
 ```
 
-**141 pruebas** que cubren autenticación, roles, CRUD, reglas de negocio,
+**147 pruebas** que cubren autenticación, roles, CRUD, reglas de negocio,
 transiciones de estado, facturación, reportes, PQR, chatbot, pagos y
 seguridad.
 
@@ -467,7 +467,7 @@ Oleo-Lienzo/
 │   │   └── main.py
 │   ├── sql/               · script de creación de PostgreSQL
 │   ├── scripts/           · generadores del SQL y de la colección Postman
-│   ├── tests/             · 141 pruebas con pytest
+│   ├── tests/             · 147 pruebas con pytest
 │   ├── seed.py
 │   ├── requirements.txt
 │   └── .env.example

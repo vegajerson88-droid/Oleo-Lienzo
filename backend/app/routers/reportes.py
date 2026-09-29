@@ -10,11 +10,16 @@ from app.crud import venta as venta_crud
 from app.database import get_db
 from app.dependencies.auth import admin_o_empleado
 from app.dependencies.common import RESPUESTAS_AUTH
-from app.models.usuario import Usuario
 from app.services.excel import generar_reporte_ventas_excel
 from app.services.pdf import generar_reporte_ventas_pdf
 
-router = APIRouter(prefix="/reportes", tags=["Reportes"], responses=RESPUESTAS_AUTH)
+router = APIRouter(
+    prefix="/reportes",
+    tags=["Reportes"],
+    # La regla vale para todo el recurso: se declara una sola vez aquí.
+    dependencies=[Depends(admin_o_empleado)],
+    responses=RESPUESTAS_AUTH,
+)
 
 TIPO_EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -40,7 +45,6 @@ def _dia_o_hoy(dia: date | None) -> date:
 async def reporte_ventas_diarias(
     dia: date | None = DiaQuery,
     db: AsyncSession = Depends(get_db),
-    _u: Usuario = Depends(admin_o_empleado),
 ):
     fecha = _dia_o_hoy(dia)
     ventas = await venta_crud.ventas_del_dia(db, fecha)
@@ -97,7 +101,6 @@ async def reporte_ventas_diarias(
 async def reporte_ventas_pdf(
     dia: date | None = DiaQuery,
     db: AsyncSession = Depends(get_db),
-    _u: Usuario = Depends(admin_o_empleado),
 ):
     fecha = _dia_o_hoy(dia)
     ventas = await venta_crud.ventas_del_dia(db, fecha)
@@ -126,7 +129,6 @@ async def reporte_ventas_pdf(
 async def reporte_ventas_excel(
     dia: date | None = DiaQuery,
     db: AsyncSession = Depends(get_db),
-    _u: Usuario = Depends(admin_o_empleado),
 ):
     fecha = _dia_o_hoy(dia)
     ventas = await venta_crud.ventas_del_dia(db, fecha)

@@ -35,7 +35,7 @@ function PanelEmpleado() {
   const [pestana, setPestana] = useState("dashboard");
 
   const vistas = {
-    dashboard: <DashboardPanel token={token} />,
+    dashboard: <DashboardPanel token={token} rol="empleado" />,
     pedidos: <PedidosManager token={token} />,
     ventas: <VentasManager token={token} />,
     facturas: <FacturasManager token={token} puedeGestionar />,

@@ -5,8 +5,8 @@ de Validación Técnica del SENA.
 
 **Estados:** ✅ Completo · ⚠️ Parcial · ❌ Pendiente
 
-**Fecha de la auditoría:** 24 de septiembre de 2026
-**Verificado con:** 141 pruebas automatizadas (SQLite y PostgreSQL), pruebas
+**Fecha de la auditoría:** 29 de septiembre de 2026
+**Verificado con:** 147 pruebas automatizadas (SQLite y PostgreSQL), pruebas
 manuales por API y recorrido completo en navegador real.
 
 ---
@@ -20,12 +20,21 @@ manuales por API y recorrido completo en navegador real.
 | Cuarto avance — FastAPI | 31 | 31 | 0 | 0 |
 | Quinto avance — Gestión comercial e IA | 20 | 19 | 1 | 0 |
 | Matriz de validación SENA | 24 | 24 | 0 | 0 |
-| **Total** | **121** | **120** | **1** | **0** |
+| Lista de chequeo — valoración final | 65 | 64 | 1 | 0 |
+| **Total** | **186** | **184** | **2** | **0** |
 
-El único punto no cerrado es el **despliegue con URL pública**, que necesita
-las credenciales de la plataforma de quien presenta el proyecto. Todo lo
-necesario está preparado (`Dockerfile`, `railway.json`, `docker-compose.yml`
-y la guía en `docs/despliegue.md`).
+Quedan dos puntos abiertos, y ninguno depende del código:
+
+1. **El despliegue con URL pública**, que necesita las cuentas de quien
+   presenta el proyecto. Todo lo demás está preparado: `Dockerfile`,
+   `render.yaml`, `frontend/vercel.json`, `docker-compose.yml` y la guía
+   paso a paso en `docs/despliegue.md`.
+2. **El criterio 1 de la valoración final** («las rutas no contienen
+   verbos»): las rutas de autenticación —`/api/auth/login`,
+   `/api/auth/registro`— sí los llevan. Es una excepción consciente y
+   argumentada en `docs/diseno-api.md`: es la convención establecida para
+   autenticación y se prefirió a un sustantivo artificial como
+   `/api/sesiones`. Los 64 criterios restantes se cumplen.
 
 ### Nota sobre el tercer avance
 
@@ -152,7 +161,7 @@ sobre FastAPI.
 | 10 | Dashboard administrativo con tarjetas | ✅ | 12 indicadores |
 | 11 | Dashboard de ventas con barras, líneas y tarjetas | ✅ | 4 gráficos |
 | 12 | Dashboards según el rol | ✅ | 12 / 6 / 5 indicadores por rol |
-| 13 | Filtros en los dashboards | ✅ | Rango de fechas |
+| 13 | Filtros en los dashboards | ✅ | Fecha inicial, fecha final, obra, servicio, estado y cliente |
 | 14 | Nuevos endpoints en FastAPI | ✅ | De 27 a 60 operaciones |
 | 15 | Los dashboards consumen la API, sin datos escritos a mano | ✅ | `crud/estadisticas.py`, con GROUP BY |
 | 16 | Módulo de PQR | ✅ | Con radicado y 4 estados |
@@ -203,7 +212,7 @@ sobre FastAPI.
 | 8.1 | `/docs` y `/redoc` personalizadas con tags, descripciones y ejemplos | ✅ | 14 secciones, 60 operaciones documentadas |
 | 8.2 | README con instrucciones, `requirements.txt` y `.env.example` | ✅ | `README.md` de 476 líneas |
 | **9. Pruebas** ||||
-| 9.1 | Pruebas con Pytest que cubren CRUD y autenticación | ✅ | 141 pruebas, verdes en SQLite y PostgreSQL |
+| 9.1 | Pruebas con Pytest que cubren CRUD y autenticación | ✅ | 147 pruebas, verdes en SQLite y PostgreSQL |
 | **10. Frontend React** ||||
 | 10.1 | Cliente HTTP centralizado con la URL por variable de entorno | ✅ | `frontend/src/services/api.js`, `VITE_API_URL` |
 | 10.2 | CRUD completamente funcional desde la interfaz | ✅ | Paneles de obras, servicios y usuarios |
@@ -248,7 +257,7 @@ Tiempo estimado: entre 20 y 30 minutos siguiendo la guía.
 
 | Método | Alcance |
 |---|---|
-| **Pruebas automatizadas** | 141 pruebas con pytest, ejecutadas en SQLite y en PostgreSQL |
+| **Pruebas automatizadas** | 147 pruebas con pytest, ejecutadas en SQLite y en PostgreSQL |
 | **Pruebas por API** | Los 60 endpoints, con curl y con la colección de Postman |
 | **Pruebas de navegador** | Recorrido completo con Playwright y Chromium: registro, inicio de sesión por rol, pedido, confirmación, venta, factura, descarga de PDF y de Excel |
 | **Inspección de la base** | Consultas directas sobre PostgreSQL para comprobar tablas, restricciones y hashes |

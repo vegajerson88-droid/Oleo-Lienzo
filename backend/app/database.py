@@ -17,7 +17,6 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.core.config import get_settings
 
-
 if sys.platform == "win32":
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 

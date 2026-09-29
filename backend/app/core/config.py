@@ -5,9 +5,11 @@ Ninguna credencial vive en el código: todo valor sensible se define en `.env`
 para desarrollo y nunca contienen secretos reales.
 """
 
+import secrets
 from decimal import Decimal
 from functools import lru_cache
 
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -27,7 +29,11 @@ class Settings(BaseSettings):
     db_max_overflow: int = 10
 
     # ── Seguridad / JWT ───────────────────────────────────────────────────
-    jwt_secret_key: str = "cambia-esta-clave-en-produccion"
+    # Sin valor por defecto en el código: se exige por entorno. Si falta, en
+    # desarrollo se genera una clave aleatoria de un solo uso (los tokens
+    # dejan de valer al reiniciar, que es justo lo que debe pasar) y en
+    # producción la aplicación se niega a arrancar.
+    jwt_secret_key: str = Field(default="", min_length=0)
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60
     # Ventana de validez del enlace de recuperación de contraseña.
@@ -73,6 +79,30 @@ class Settings(BaseSettings):
     # ── Reglas de negocio ─────────────────────────────────────────────────
     iva_porcentaje: float = 19.0
     factura_prefijo: str = "OL"
+
+    @field_validator("cors_origins")
+    @classmethod
+    def sin_comodin(cls, valor: str) -> str:
+        """CORS exige una lista explícita de orígenes: el comodín no se acepta."""
+        if "*" in valor:
+            raise ValueError(
+                "CORS_ORIGINS no admite '*'. Enumera los orígenes permitidos "
+                "separados por comas, por ejemplo: https://mi-app.vercel.app"
+            )
+        return valor
+
+    def model_post_init(self, _contexto) -> None:
+        """Resuelve la clave secreta según el entorno."""
+        if self.jwt_secret_key:
+            return
+        if self.es_produccion:
+            raise ValueError(
+                "Falta JWT_SECRET_KEY. En producción es obligatoria: genera una "
+                'con `python -c "import secrets; print(secrets.token_urlsafe(48))"` '
+                "y configúrala como variable de entorno."
+            )
+        # En desarrollo, clave efímera: nunca un valor fijo escrito en el código.
+        object.__setattr__(self, "jwt_secret_key", secrets.token_urlsafe(48))
 
     @property
     def cors_origins_list(self) -> list[str]:

@@ -37,6 +37,7 @@ backend/generados/
 logs/
 
 # ── Editores y sistema operativo ─────────────────────────────────────────
+.claude/
 .DS_Store
 Thumbs.db
 *.swp

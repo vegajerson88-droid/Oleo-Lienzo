@@ -399,6 +399,8 @@ INSERT INTO rol_permisos (rol_id, permiso_id) VALUES (3, 5), (3, 9), (3, 10), (3
 
 -- ── Usuarios de prueba ─────────────────────────────────────────────────
 -- Las contraseñas se almacenan EXCLUSIVAMENTE como hash bcrypt.
+-- Cada hash lleva su propia sal, así que regenerar este archivo produce
+-- valores distintos para las mismas contraseñas. Es lo esperado.
 -- Credenciales en claro (solo para pruebas):
 --   administrador   admin@oleoylienzo.com        Admin1234
 --   empleado        empleado@oleoylienzo.com     Empleado123
@@ -406,13 +408,13 @@ INSERT INTO rol_permisos (rol_id, permiso_id) VALUES (3, 5), (3, 9), (3, 10), (3
 --   cliente         carlos.mejia@ejemplo.com     Cliente123
 
 INSERT INTO usuarios (id, nombre, apellido, tipo_documento, numero_documento, direccion, telefono, email, password_hash, activo, rol_id, creado_en, actualizado_en)
-VALUES (1, 'Ana', 'Restrepo', 'CC', '1000000001', 'Calle 10 # 20-30', '3001234567', 'admin@oleoylienzo.com', '$2b$12$aR/8kne4wImiTsR5PQDaceCW2In/ecl5YvS6PnL6Dl4uOMP7i6WHu', TRUE, 1, NOW(), NOW());
+VALUES (1, 'Ana', 'Restrepo', 'CC', '1000000001', 'Calle 10 # 20-30', '3001234567', 'admin@oleoylienzo.com', '$2b$12$ZClB3sEZ82w4Xj93p6wL7uTY.nHQxYGon2eb3JWUc3DLUqmVQ5VH.', TRUE, 1, NOW(), NOW());
 INSERT INTO usuarios (id, nombre, apellido, tipo_documento, numero_documento, direccion, telefono, email, password_hash, activo, rol_id, creado_en, actualizado_en)
-VALUES (2, 'Luis', 'Gómez', 'CC', '1000000002', 'Carrera 45 # 12-05', '3007654321', 'empleado@oleoylienzo.com', '$2b$12$sBDOYlt9hyiBYRrwzACnT.fLA7ilcKmZuEZyq0fbXbdWs4w96j0Au', TRUE, 2, NOW(), NOW());
+VALUES (2, 'Luis', 'Gómez', 'CC', '1000000002', 'Carrera 45 # 12-05', '3007654321', 'empleado@oleoylienzo.com', '$2b$12$dHXYyE5inc4tp/t/i1b1xe/qk3eNVORrs8rD.E0C4AZb9/NmYT5nK', TRUE, 2, NOW(), NOW());
 INSERT INTO usuarios (id, nombre, apellido, tipo_documento, numero_documento, direccion, telefono, email, password_hash, activo, rol_id, creado_en, actualizado_en)
-VALUES (3, 'Sara', 'Pérez', 'CC', '1000000003', 'Avenida Siempre Viva 742', '3009876543', 'cliente@oleoylienzo.com', '$2b$12$T8JfxDlLZ.WrbMfQqfsRIuin2yg0RcHx9wULDWZ0rMmBXr4L.ln5.', TRUE, 3, NOW(), NOW());
+VALUES (3, 'Sara', 'Pérez', 'CC', '1000000003', 'Avenida Siempre Viva 742', '3009876543', 'cliente@oleoylienzo.com', '$2b$12$KtmtZyaCP04X/h9pW8gLHej6QMsQ9nME5dJog1R8ONt0QwI7ue5V.', TRUE, 3, NOW(), NOW());
 INSERT INTO usuarios (id, nombre, apellido, tipo_documento, numero_documento, direccion, telefono, email, password_hash, activo, rol_id, creado_en, actualizado_en)
-VALUES (4, 'Carlos', 'Mejía', 'CC', '1000000004', 'Calle 80 # 15-22', '3005551122', 'carlos.mejia@ejemplo.com', '$2b$12$vl2A/4Mv7LjbVJSGwkPUbOGmp39EB.h4NJwxA4zsmlKuyNqcglBPi', TRUE, 3, NOW(), NOW());
+VALUES (4, 'Carlos', 'Mejía', 'CC', '1000000004', 'Calle 80 # 15-22', '3005551122', 'carlos.mejia@ejemplo.com', '$2b$12$8Ai1CPMPurTdTQxE/UHs7.PbAAK4qWh94xuZOZ07PfXqDBhG7Oh5a', TRUE, 3, NOW(), NOW());
 
 -- ── Catálogo de obras ──────────────────────────────────────────────────
 INSERT INTO obras (id, titulo, artista, anio, tecnica, precio, descripcion, imagen_url, disponible, stock, creado_en, actualizado_en)

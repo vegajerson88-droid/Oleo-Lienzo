@@ -419,14 +419,14 @@ http://localhost:8000/docs
 cd backend && pytest -v
 ```
 
-**141 pruebas.** Para demostrar que no dependen de SQLite:
+**147 pruebas.** Para demostrar que no dependen de SQLite:
 
 ```bash
 createdb -U postgres oleo_test
 TEST_DATABASE_URL="postgresql+psycopg://oleo:tu_contrasena@localhost:5432/oleo_test" pytest
 ```
 
-Las mismas 141 pasan contra PostgreSQL.
+Las mismas 147 pasan contra PostgreSQL.
 
 ---
 

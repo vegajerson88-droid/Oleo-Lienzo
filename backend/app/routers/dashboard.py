@@ -10,10 +10,12 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.crud import estadisticas
+from app.crud.estadisticas import FiltrosDashboard
 from app.database import get_db
 from app.dependencies.auth import get_current_user
 from app.dependencies.common import RESPUESTAS_AUTH
 from app.models.usuario import Usuario
+from app.models.venta import EstadoVenta
 from app.schemas.dashboard import DashboardOut, IndicadorCard, PuntoSerie, SerieGrafico
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"], responses=RESPUESTAS_AUTH)
@@ -79,12 +81,23 @@ def _serie(nombre: str, tipo: str, puntos: list[tuple[str, float]]) -> SerieGraf
         "pendientes). No ve usuarios ni ingresos globales.\n"
         "- **Cliente**: únicamente su propia actividad: pedidos, compras, "
         "total invertido, facturas y PQR abiertas.\n\n"
-        "Acepta `fecha_inicio` y `fecha_fin` para acotar el periodo."
+        "Todos los indicadores y gráficos admiten los mismos filtros: "
+        "`fecha_inicio`, `fecha_fin`, `obra_id`, `servicio_id`, `estado` y "
+        "`cliente_id`. El cliente solo ve lo suyo: para ese rol `cliente_id` "
+        "se ignora y se fuerza su propio identificador."
     ),
 )
 async def obtener_dashboard(
     fecha_inicio: date | None = Query(default=None, description="Inicio del periodo."),
     fecha_fin: date | None = Query(default=None, description="Fin del periodo."),
+    obra_id: int | None = Query(default=None, ge=1, description="Solo ventas con esta obra."),
+    servicio_id: int | None = Query(
+        default=None, ge=1, description="Solo ventas con este servicio."
+    ),
+    estado: EstadoVenta | None = Query(default=None, description="Solo ventas en este estado."),
+    cliente_id: int | None = Query(
+        default=None, ge=1, description="Solo ventas de este cliente. Ignorado para el rol cliente."
+    ),
     db: AsyncSession = Depends(get_db),
     usuario: Usuario = Depends(get_current_user),
 ):
@@ -95,55 +108,54 @@ async def obtener_dashboard(
         )
 
     rol = usuario.rol.nombre
+    filtros = FiltrosDashboard(
+        desde=fecha_inicio,
+        hasta=fecha_fin,
+        # Un cliente nunca puede espiar los datos de otro: se fuerza el suyo.
+        cliente_id=usuario.id if rol == "cliente" else cliente_id,
+        obra_id=obra_id,
+        servicio_id=servicio_id,
+        estado=estado,
+    )
 
     if rol == "administrador":
-        datos = await estadisticas.indicadores_admin(db, fecha_inicio, fecha_fin)
+        datos = await estadisticas.indicadores_admin(db, filtros)
         variacion = await estadisticas.variacion_ingresos(db)
         graficos = [
-            _serie(
-                "Ventas por día",
-                "linea",
-                await estadisticas.serie_ventas_por_dia(db, fecha_inicio, fecha_fin),
-            ),
+            _serie("Ventas por día", "linea", await estadisticas.serie_ventas_por_dia(db, filtros)),
             _serie(
                 "Ventas por estado",
                 "barras",
-                await estadisticas.serie_ventas_por_estado(db, fecha_inicio, fecha_fin),
+                await estadisticas.serie_ventas_por_estado(db, filtros),
             ),
             _serie(
                 "Productos y servicios más vendidos",
                 "barras",
-                await estadisticas.top_productos(db, fecha_inicio, fecha_fin),
+                await estadisticas.top_productos(db, filtros),
             ),
             _serie("PQR por estado", "barras", await estadisticas.serie_pqr_por_estado(db)),
         ]
         tarjetas = _a_cards(datos, {"ingresos": variacion})
 
     elif rol == "empleado":
-        datos = await estadisticas.indicadores_empleado(db, fecha_inicio, fecha_fin)
+        datos = await estadisticas.indicadores_empleado(db, filtros)
         graficos = [
-            _serie(
-                "Ventas por día",
-                "linea",
-                await estadisticas.serie_ventas_por_dia(db, fecha_inicio, fecha_fin),
-            ),
+            _serie("Ventas por día", "linea", await estadisticas.serie_ventas_por_dia(db, filtros)),
             _serie(
                 "Productos y servicios más vendidos",
                 "barras",
-                await estadisticas.top_productos(db, fecha_inicio, fecha_fin),
+                await estadisticas.top_productos(db, filtros),
             ),
         ]
         tarjetas = _a_cards(datos)
 
     else:  # cliente
-        datos = await estadisticas.indicadores_cliente(db, usuario.id)
+        datos = await estadisticas.indicadores_cliente(db, usuario.id, filtros)
         graficos = [
             _serie(
                 "Mis compras por día",
                 "linea",
-                await estadisticas.serie_ventas_por_dia(
-                    db, fecha_inicio, fecha_fin, cliente_id=usuario.id
-                ),
+                await estadisticas.serie_ventas_por_dia(db, filtros),
             )
         ]
         tarjetas = _a_cards(datos)

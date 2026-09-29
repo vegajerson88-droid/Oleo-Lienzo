@@ -12,11 +12,14 @@ from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 
 from app.core.config import get_settings
-from app.core.dinero import calcular_linea, calcular_totales
+from app.core.dinero import a_decimal, calcular_linea, calcular_totales
 from app.core.security import hash_password
 from app.database import AsyncSessionLocal, init_models
+from app.models.detalle_pedido import DetallePedido
 from app.models.detalle_venta import DetalleVenta
+from app.models.factura import EstadoFactura, Factura
 from app.models.obra import Obra
+from app.models.pedido import EstadoPedido, Pedido
 from app.models.pqr import PQR, EstadoPQR, TipoPQR
 from app.models.rol import Permiso, Rol
 from app.models.servicio import Servicio
@@ -412,6 +415,101 @@ async def _sembrar_ventas(db, usuarios, obras, servicios) -> None:
     await db.commit()
 
 
+async def _sembrar_facturas(db) -> None:
+    """Emite la factura de cada venta ya pagada.
+
+    Sin facturas el panel de facturación, el indicador de facturación del
+    dashboard y la descarga en PDF no tendrían nada que mostrar.
+    """
+    if (await db.execute(select(Factura))).scalars().first() is not None:
+        return
+
+    ventas = (
+        (await db.execute(select(Venta).where(Venta.estado == EstadoVenta.pagada)))
+        .unique()
+        .scalars()
+        .all()
+    )
+
+    for venta in ventas:
+        cliente = await db.get(Usuario, venta.cliente_id)
+        factura = Factura(
+            numero="",
+            venta_id=venta.id,
+            cliente_id=cliente.id,
+            estado=EstadoFactura.pagada,
+            # La factura se emite el mismo día de la venta, no el día del seed.
+            fecha_emision=venta.creado_en,
+            cliente_nombre=f"{cliente.nombre} {cliente.apellido}",
+            cliente_documento=f"{cliente.tipo_documento} {cliente.numero_documento}",
+            cliente_email=cliente.email,
+            cliente_direccion=cliente.direccion,
+            cliente_telefono=cliente.telefono,
+            subtotal=venta.subtotal,
+            descuento=venta.descuento,
+            impuestos=venta.impuestos,
+            iva_porcentaje=settings.iva_porcentaje,
+            total=venta.total,
+            creado_en=venta.creado_en,
+            actualizado_en=venta.creado_en,
+            observaciones="Factura de ejemplo generada por seed.py.",
+        )
+        db.add(factura)
+        await db.flush()
+        factura.numero = f"{settings.factura_prefijo}-{factura.id:06d}"
+
+    await db.commit()
+
+
+async def _sembrar_pedidos(db, usuarios, obras, servicios) -> None:
+    """Crea pedidos de ejemplo para el panel del cliente.
+
+    Se deja uno en estado `pendiente` a propósito: permite demostrar en vivo
+    el encadenamiento pedido confirmado -> venta -> factura.
+    """
+    if (await db.execute(select(Pedido))).scalars().first() is not None:
+        return
+
+    ahora = datetime.now(timezone.utc)
+    plantillas = [
+        (
+            0,
+            usuarios["cliente@oleoylienzo.com"],
+            [(obras[6], 1), (servicios[1], 1)],
+            EstadoPedido.pendiente,
+        ),
+        (4, usuarios["carlos.mejia@ejemplo.com"], [(obras[7], 1)], EstadoPedido.cancelado),
+    ]
+
+    for dias_atras, cliente, items, estado in plantillas:
+        momento = ahora - timedelta(days=dias_atras)
+        lineas = []
+        for producto, cantidad in items:
+            es_obra = isinstance(producto, Obra)
+            descripcion = f"{producto.titulo} — {producto.artista}" if es_obra else producto.nombre
+            lineas.append(
+                DetallePedido(
+                    obra_id=producto.id if es_obra else None,
+                    servicio_id=None if es_obra else producto.id,
+                    descripcion=descripcion,
+                    cantidad=cantidad,
+                    precio_unitario=producto.precio,
+                )
+            )
+
+        pedido = Pedido(
+            cliente_id=cliente.id,
+            estado=estado,
+            total=a_decimal(sum(calcular_linea(p.precio, c) for p, c in items)),
+            creado_en=momento,
+            actualizado_en=momento,
+        )
+        pedido.detalles = lineas
+        db.add(pedido)
+
+    await db.commit()
+
+
 async def _sembrar_pqr(db, usuarios) -> None:
     if (await db.execute(select(PQR))).scalars().first() is not None:
         return
@@ -455,6 +553,8 @@ async def seed() -> None:
         usuarios = await _sembrar_usuarios(db, roles)
         obras, servicios = await _sembrar_catalogo(db)
         await _sembrar_ventas(db, usuarios, obras, servicios)
+        await _sembrar_facturas(db)
+        await _sembrar_pedidos(db, usuarios, obras, servicios)
         await _sembrar_pqr(db, usuarios)
 
     # Entrena el modelo de sugerencia de precios con el catálogo real.
@@ -464,7 +564,8 @@ async def seed() -> None:
     print("  Seed completado")
     print("─" * 62)
     print(f"  {len(PERMISOS)} permisos · {len(ROLES)} roles · {len(USUARIOS)} usuarios")
-    print(f"  {len(OBRAS)} obras · {len(SERVICIOS)} servicios · ventas y PQR de ejemplo")
+    print(f"  {len(OBRAS)} obras · {len(SERVICIOS)} servicios")
+    print("  Ventas, facturas, pedidos y PQR de ejemplo")
     print("  Modelo de IA local entrenado (modelo_precio.joblib)")
     print("─" * 62)
     print("  Credenciales de prueba:")

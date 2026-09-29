@@ -45,7 +45,17 @@ async def _override_get_db():
         yield session
 
 
-app.dependency_overrides[get_db] = _override_get_db
+@pytest_asyncio.fixture(scope="function", autouse=True)
+async def sustituir_dependencias():
+    """Instala los `dependency_overrides` y los retira al terminar la prueba.
+
+    Se limpian siempre, incluso si la prueba falla: dejarlos puestos haría que
+    una prueba condicionara a la siguiente.
+    """
+    app.dependency_overrides[get_db] = _override_get_db
+    yield
+    app.dependency_overrides.clear()
+
 
 # El limitador de peticiones se desactiva en la suite: los fixtures inician
 # sesión decenas de veces por minuto y lo dispararían. Que funciona de verdad

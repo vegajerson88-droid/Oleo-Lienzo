@@ -16,6 +16,8 @@ from app.dependencies.common import (
     IdPath,
 )
 from app.dependencies.pagination import PaginationParams, pagination_params
+from app.dependencies.recursos import servicio_de_la_ruta
+from app.models.servicio import Servicio
 from app.schemas.common import Page
 from app.schemas.servicio import ServicioCreate, ServicioOut, ServicioReplace, ServicioUpdate
 
@@ -50,11 +52,9 @@ async def listar_servicios(
     summary="Consultar un servicio",
     responses=RESPUESTA_404,
 )
-async def obtener_servicio(servicio_id: IdPath, db: AsyncSession = Depends(get_db)):
-    try:
-        return await servicio_crud.get_by_id(db, servicio_id)
-    except DomainError as exc:
-        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+async def obtener_servicio(servicio: Servicio = Depends(servicio_de_la_ruta)):
+    # La dependencia ya resolvió el servicio o cortó con 404.
+    return servicio
 
 
 @router.post(

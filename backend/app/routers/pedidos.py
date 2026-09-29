@@ -14,6 +14,7 @@ from app.models.usuario import Usuario
 from app.schemas.common import Page
 from app.schemas.pedido import PedidoCambioEstado, PedidoCreate, PedidoOut
 from app.services import email as email_service
+from app.services import tareas
 
 router = APIRouter(prefix="/pedidos", tags=["Pedidos"], responses=RESPUESTAS_AUTH)
 
@@ -136,5 +137,5 @@ async def cambiar_estado_pedido(
             pedido.estado.value,
         )
     if venta is not None:
-        background_tasks.add_task(email_service.enviar_confirmacion_compra, venta, None)
+        background_tasks.add_task(tareas.confirmar_compra, venta.id)
     return pedido

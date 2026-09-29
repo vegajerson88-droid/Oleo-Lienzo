@@ -5,16 +5,27 @@ modelos ORM nunca se desincronicen.
 """
 
 import sys
+from pathlib import Path
 
-sys.path.insert(0, "/home/user/Oleo-Lienzo/backend")
+# La raíz del backend se resuelve desde este archivo: así el script funciona
+# en cualquier máquina, no solo en la que lo generó.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.schema import CreateIndex, CreateTable
+from sqlalchemy.dialects import postgresql  # noqa: E402
+from sqlalchemy.schema import CreateIndex, CreateTable  # noqa: E402
 
-import app.models  # noqa: F401  registra todas las tablas
-from app.core.security import hash_password
-from app.database import Base
-from seed import OBRAS, PERMISOS, PERMISOS_CLIENTE, PERMISOS_EMPLEADO, ROLES, SERVICIOS, USUARIOS
+import app.models  # noqa: E402,F401  registra todas las tablas
+from app.core.security import hash_password  # noqa: E402
+from app.database import Base  # noqa: E402
+from seed import (  # noqa: E402
+    OBRAS,
+    PERMISOS,
+    PERMISOS_CLIENTE,
+    PERMISOS_EMPLEADO,
+    ROLES,
+    SERVICIOS,
+    USUARIOS,
+)
 
 dialecto = postgresql.dialect()
 
@@ -218,7 +229,7 @@ COMMIT;
 -- ═══════════════════════════════════════════════════════════════════════
 """)
 
-destino = "/home/user/Oleo-Lienzo/backend/sql/schema_postgresql.sql"
+destino = Path(__file__).resolve().parent.parent / "sql" / "schema_postgresql.sql"
 with open(destino, "w") as f:
     f.write("\n".join(partes))
 print(f"Generado {destino}")

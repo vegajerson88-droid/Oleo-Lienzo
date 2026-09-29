@@ -50,7 +50,7 @@ function PanelCliente() {
     pedidos: <MisPedidos token={token} />,
     facturas: <FacturasManager token={token} />,
     pqr: <PqrManager token={token} />,
-    resumen: <DashboardPanel token={token} />,
+    resumen: <DashboardPanel token={token} rol="cliente" />,
   };
 
   return (

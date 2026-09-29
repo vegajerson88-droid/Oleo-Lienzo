@@ -25,5 +25,10 @@ select = ["E", "W", "F", "I"]
 # registre en Base.metadata. Sus `noqa: F401` son deliberados.
 "app/models/__init__.py" = ["F401"]
 
+# El generador del Manual Técnico es, en su mayor parte, prosa en castellano
+# dentro de celdas de tabla. Partir esas frases para respetar el ancho de línea
+# las volvería ilegibles en el código sin mejorar nada en el PDF resultante.
+"scripts/generar_manual_tecnico.py" = ["E501"]
+
 [lint.isort]
 known-first-party = ["app", "tests"]

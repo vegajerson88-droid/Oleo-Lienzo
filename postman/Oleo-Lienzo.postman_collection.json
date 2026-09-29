@@ -439,10 +439,34 @@
                   "value": "",
                   "description": "Fin del periodo.",
                   "disabled": true
+                },
+                {
+                  "key": "obra_id",
+                  "value": "",
+                  "description": "Solo ventas con esta obra.",
+                  "disabled": true
+                },
+                {
+                  "key": "servicio_id",
+                  "value": "",
+                  "description": "Solo ventas con este servicio.",
+                  "disabled": true
+                },
+                {
+                  "key": "estado",
+                  "value": "",
+                  "description": "Solo ventas en este estado.",
+                  "disabled": true
+                },
+                {
+                  "key": "cliente_id",
+                  "value": "",
+                  "description": "Solo ventas de este cliente. Ignorado para el rol cliente.",
+                  "disabled": true
                 }
               ]
             },
-            "description": "Devuelve los indicadores y gráficos que corresponden al **rol de quien consulta**, sin que el frontend tenga que pedir uno concreto:\n\n- **Administrador**: usuarios, obras, servicios, ventas, facturación y PQR, con la evolución diaria de ventas, el reparto por estado, los productos más vendidos y el estado de las PQR.\n- **Empleado**: solo lo operativo (catálogo, ventas, pedidos y PQR pendientes). No ve usuarios ni ingresos globales.\n- **Cliente**: únicamente su propia actividad: pedidos, compras, total invertido, facturas y PQR abiertas.\n\nAcepta `fecha_inicio` y `fecha_fin` para acotar el periodo.",
+            "description": "Devuelve los indicadores y gráficos que corresponden al **rol de quien consulta**, sin que el frontend tenga que pedir uno concreto:\n\n- **Administrador**: usuarios, obras, servicios, ventas, facturación y PQR, con la evolución diaria de ventas, el reparto por estado, los productos más vendidos y el estado de las PQR.\n- **Empleado**: solo lo operativo (catálogo, ventas, pedidos y PQR pendientes). No ve usuarios ni ingresos globales.\n- **Cliente**: únicamente su propia actividad: pedidos, compras, total invertido, facturas y PQR abiertas.\n\nTodos los indicadores y gráficos admiten los mismos filtros: `fecha_inicio`, `fecha_fin`, `obra_id`, `servicio_id`, `estado` y `cliente_id`. El cliente solo ve lo suyo: para ese rol `cliente_id` se ignora y se fuerza su propio identificador.",
             "auth": {
               "type": "bearer",
               "bearer": [

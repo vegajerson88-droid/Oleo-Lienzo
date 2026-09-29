@@ -19,7 +19,7 @@ from app.models.pqr import EstadoPQR, TipoPQR
 from app.models.usuario import Usuario
 from app.schemas.common import Page
 from app.schemas.pqr import PQRCambioEstado, PQRCreate, PQROut, PQRResponder
-from app.services import email as email_service
+from app.services import tareas
 
 router = APIRouter(prefix="/pqr", tags=["PQR"])
 
@@ -50,7 +50,7 @@ async def radicar_pqr(
     except DomainError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail)
 
-    background_tasks.add_task(email_service.enviar_pqr_radicada, pqr)
+    background_tasks.add_task(tareas.avisar_pqr_radicada, pqr.id)
     return pqr
 
 
@@ -130,7 +130,7 @@ async def responder_pqr(
     except DomainError as exc:
         raise HTTPException(status_code=exc.status_code, detail=exc.detail)
 
-    background_tasks.add_task(email_service.enviar_pqr_respondida, pqr)
+    background_tasks.add_task(tareas.avisar_pqr_respondida, pqr.id)
     return pqr
 
 

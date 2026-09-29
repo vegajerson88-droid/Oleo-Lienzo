@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart3, Brush, FileText, MessageSquareWarning, Package,
   RefreshCw, ShoppingCart, Users, Wallet,
@@ -11,6 +11,7 @@ import Alert from "../../components/ui/Alert";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Input from "../../components/ui/Input";
+import Select from "../../components/ui/Select";
 import { useRecurso } from "../../hooks/useRecurso";
 import { api } from "../../services/api";
 
@@ -31,6 +32,24 @@ const GRAFICOS_DE_DINERO = new Set([
   "Ventas por día", "Mis compras por día", "Productos y servicios más vendidos",
 ]);
 
+/** Estados de venta por los que se puede filtrar, tal como los nombra la API. */
+const ESTADOS_VENTA = [
+  { value: "", label: "Todos los estados" },
+  { value: "pendiente_pago", label: "Pendiente de pago" },
+  { value: "pagada", label: "Pagada" },
+  { value: "anulada", label: "Anulada" },
+  { value: "reembolsada", label: "Reembolsada" },
+];
+
+const FILTROS_VACIOS = {
+  fecha_inicio: "", fecha_fin: "", obra_id: "", servicio_id: "", estado: "", cliente_id: "",
+};
+
+/** Quita los campos vacíos: la API solo debe recibir los filtros realmente usados. */
+function soloLosRellenos(filtros) {
+  return Object.fromEntries(Object.entries(filtros).filter(([, valor]) => valor !== ""));
+}
+
 /**
  * Dashboard.
  *
@@ -38,27 +57,57 @@ const GRAFICOS_DE_DINERO = new Set([
  * indicadores y gráficos corresponden al rol de quien consulta. Aquí no hay
  * ni un solo número escrito a mano.
  */
-function DashboardPanel({ token }) {
-  const [fechaInicio, setFechaInicio] = useState("");
-  const [fechaFin, setFechaFin] = useState("");
+function DashboardPanel({ token, rol }) {
+  const [filtros, setFiltros] = useState(FILTROS_VACIOS);
   const [filtrosAplicados, setFiltrosAplicados] = useState({});
+  // Opciones de los desplegables: se piden a la API, no se escriben a mano.
+  const [opciones, setOpciones] = useState({ obras: [], servicios: [], clientes: [] });
+
+  const esAdmin = rol === "administrador";
 
   const { datos, cargando, error, recargar } = useRecurso(
     (signal) => api.dashboard(token, filtrosAplicados, signal),
     [filtrosAplicados]
   );
 
+  useEffect(() => {
+    const control = new AbortController();
+
+    async function cargarOpciones() {
+      try {
+        const [obras, servicios, usuarios] = await Promise.all([
+          api.listarObras({ page_size: 100 }, control.signal),
+          api.listarServicios({ page_size: 100 }, control.signal),
+          // Solo el administrador puede listar usuarios para filtrar por cliente.
+          esAdmin
+            ? api.listarUsuarios(token, { page_size: 100 }, control.signal)
+            : Promise.resolve({ items: [] }),
+        ]);
+        setOpciones({
+          obras: obras.items ?? [],
+          servicios: servicios.items ?? [],
+          clientes: (usuarios.items ?? []).filter((u) => u.rol?.nombre === "cliente"),
+        });
+      } catch {
+        // Sin opciones el dashboard sigue siendo usable: solo se filtra por fecha.
+      }
+    }
+
+    cargarOpciones();
+    return () => control.abort();
+  }, [token, esAdmin]);
+
+  function cambiar(campo) {
+    return (evento) => setFiltros((previos) => ({ ...previos, [campo]: evento.target.value }));
+  }
+
   function aplicarFiltros(evento) {
     evento.preventDefault();
-    setFiltrosAplicados({
-      fecha_inicio: fechaInicio || undefined,
-      fecha_fin: fechaFin || undefined,
-    });
+    setFiltrosAplicados(soloLosRellenos(filtros));
   }
 
   function limpiarFiltros() {
-    setFechaInicio("");
-    setFechaFin("");
+    setFiltros(FILTROS_VACIOS);
     setFiltrosAplicados({});
   }
 
@@ -73,40 +122,74 @@ function DashboardPanel({ token }) {
     );
   }
 
-  const hayFiltros = Boolean(filtrosAplicados.fecha_inicio || filtrosAplicados.fecha_fin);
+  const hayFiltros = Object.keys(filtrosAplicados).length > 0;
 
   return (
     <div className="space-y-6">
-      {/* Filtros: una sola fila sobre los gráficos */}
+      {/* Filtros: fecha, producto, servicio, estado y cliente */}
       <form
         onSubmit={aplicarFiltros}
-        className="flex flex-wrap items-end gap-3 rounded-xl border border-line/70
-                   bg-paper-dim/50 p-4"
+        className="space-y-3 rounded-xl border border-line/70 bg-paper-dim/50 p-4"
       >
-        <div className="min-w-[150px] flex-1">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <Input
             label="Desde" name="fecha_inicio" type="date"
-            value={fechaInicio} onChange={(e) => setFechaInicio(e.target.value)}
+            value={filtros.fecha_inicio} onChange={cambiar("fecha_inicio")}
           />
-        </div>
-        <div className="min-w-[150px] flex-1">
           <Input
             label="Hasta" name="fecha_fin" type="date"
-            value={fechaFin} onChange={(e) => setFechaFin(e.target.value)}
+            value={filtros.fecha_fin} onChange={cambiar("fecha_fin")}
           />
+          <Select
+            label="Estado de la venta" name="estado"
+            value={filtros.estado} onChange={cambiar("estado")}
+            options={ESTADOS_VENTA}
+          />
+          <Select
+            label="Obra" name="obra_id"
+            value={filtros.obra_id} onChange={cambiar("obra_id")}
+            options={[
+              { value: "", label: "Todas las obras" },
+              ...opciones.obras.map((o) => ({ value: String(o.id), label: o.titulo })),
+            ]}
+          />
+          <Select
+            label="Servicio" name="servicio_id"
+            value={filtros.servicio_id} onChange={cambiar("servicio_id")}
+            options={[
+              { value: "", label: "Todos los servicios" },
+              ...opciones.servicios.map((s) => ({ value: String(s.id), label: s.nombre })),
+            ]}
+          />
+          {esAdmin && (
+            <Select
+              label="Cliente" name="cliente_id"
+              value={filtros.cliente_id} onChange={cambiar("cliente_id")}
+              options={[
+                { value: "", label: "Todos los clientes" },
+                ...opciones.clientes.map((c) => ({
+                  value: String(c.id),
+                  label: `${c.nombre} ${c.apellido}`,
+                })),
+              ]}
+            />
+          )}
         </div>
-        <Button type="submit" className="mb-5">Aplicar</Button>
-        {hayFiltros && (
-          <Button type="button" variant="fantasma" onClick={limpiarFiltros} className="mb-5">
-            Todo el histórico
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit">Aplicar filtros</Button>
+          {hayFiltros && (
+            <Button type="button" variant="fantasma" onClick={limpiarFiltros}>
+              Todo el histórico
+            </Button>
+          )}
+          <Button
+            type="button" variant="secundario" iconoIzquierda={RefreshCw}
+            onClick={recargar} cargando={cargando} className="ml-auto"
+          >
+            Actualizar
           </Button>
-        )}
-        <Button
-          type="button" variant="secundario" iconoIzquierda={RefreshCw}
-          onClick={recargar} cargando={cargando} className="mb-5 ml-auto"
-        >
-          Actualizar
-        </Button>
+        </div>
       </form>
 
       {/* Tarjetas de indicadores */}

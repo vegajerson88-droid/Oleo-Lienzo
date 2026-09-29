@@ -1,0 +1,66 @@
+# Despliegue del backend en Render.
+#
+# Render lee este archivo al conectar el repositorio (Blueprint). La base de
+# datos NO se crea aquí: vive en Neon, y su cadena de conexión se pega a mano
+# en DATABASE_URL desde el panel de Render.
+#
+# Pasos resumidos (la guía completa está en docs/despliegue.md):
+#   1. Crear la base en Neon y copiar su cadena de conexión.
+#   2. En Render: New > Blueprint > conectar este repositorio.
+#   3. Rellenar las variables marcadas como `sync: false`.
+#   4. Cuando Vercel dé la URL del frontend, añadirla a CORS_ORIGINS.
+
+services:
+  - type: web
+    name: oleo-lienzo-api
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    region: oregon
+    branch: main
+
+    # Render comprueba esta ruta para decidir si el servicio está sano.
+    healthCheckPath: /api/sistema/salud
+
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+
+      # Cadena de conexión de Neon. Debe llevar el driver psycopg y SSL:
+      #   postgresql+psycopg://usuario:clave@ep-xxx.neon.tech/basedatos?sslmode=require
+      - key: DATABASE_URL
+        sync: false
+
+      # Render genera un valor aleatorio la primera vez y lo conserva.
+      # En producción la aplicación no arranca sin esta variable.
+      - key: JWT_SECRET_KEY
+        generateValue: true
+
+      # Orígenes permitidos, separados por comas. No se acepta el comodín.
+      # Se rellena con la URL que dé Vercel.
+      - key: CORS_ORIGINS
+        sync: false
+
+      - key: FRONTEND_URL
+        sync: false
+
+      # Opcional: sin clave, el chatbot responde en modo local y lo declara.
+      - key: GROQ_API_KEY
+        sync: false
+
+      # Opcional: pasarela de pago en modo de prueba.
+      - key: STRIPE_SECRET_KEY
+        sync: false
+      - key: STRIPE_PUBLISHABLE_KEY
+        sync: false
+      - key: STRIPE_WEBHOOK_SECRET
+        sync: false
+
+      # Opcional: envío de correo. Sin configurar, los correos van al log.
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_USER
+        sync: false
+      - key: EMAIL_PASSWORD
+        sync: false

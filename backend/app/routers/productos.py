@@ -16,6 +16,8 @@ from app.dependencies.common import (
     IdPath,
 )
 from app.dependencies.pagination import PaginationParams, pagination_params
+from app.dependencies.recursos import obra_de_la_ruta
+from app.models.obra import Obra
 from app.schemas.common import Page
 from app.schemas.obra import ObraCreate, ObraOut, ObraReplace, ObraUpdate
 
@@ -64,11 +66,9 @@ async def listar_obras(
     description="Endpoint público con la ficha técnica completa de una obra.",
     responses=RESPUESTA_404,
 )
-async def obtener_obra(obra_id: IdPath, db: AsyncSession = Depends(get_db)):
-    try:
-        return await obra_crud.get_by_id(db, obra_id)
-    except DomainError as exc:
-        raise HTTPException(status_code=exc.status_code, detail=exc.detail)
+async def obtener_obra(obra: Obra = Depends(obra_de_la_ruta)):
+    # La dependencia ya resolvió la obra o cortó con 404.
+    return obra
 
 
 @router.post(

@@ -27,7 +27,14 @@ from app.schemas.usuario import (
     UsuarioUpdate,
 )
 
-router = APIRouter(prefix="/usuarios", tags=["Usuarios"], responses=RESPUESTAS_AUTH)
+router = APIRouter(
+    prefix="/usuarios",
+    tags=["Usuarios"],
+    # Todo el recurso es exclusivo del administrador: la regla se declara
+    # una sola vez aquí en vez de repetirla en cada operación.
+    dependencies=[Depends(solo_admin)],
+    responses=RESPUESTAS_AUTH,
+)
 
 
 @router.get(
@@ -46,7 +53,6 @@ async def listar_usuarios(
     buscar: BuscarQuery = None,
     pagination: PaginationParams = Depends(pagination_params),
     db: AsyncSession = Depends(get_db),
-    _admin: Usuario = Depends(solo_admin),
 ):
     items, total = await usuario_crud.list_usuarios(
         db,
@@ -65,7 +71,7 @@ async def listar_usuarios(
     summary="Listar roles y sus permisos",
     description="Catálogo de roles con los permisos asignados a cada uno.",
 )
-async def listar_roles(db: AsyncSession = Depends(get_db), _admin: Usuario = Depends(solo_admin)):
+async def listar_roles(db: AsyncSession = Depends(get_db)):
     return await usuario_crud.list_roles(db)
 
 
@@ -78,7 +84,6 @@ async def listar_roles(db: AsyncSession = Depends(get_db), _admin: Usuario = Dep
 async def obtener_usuario(
     usuario_id: IdPath,
     db: AsyncSession = Depends(get_db),
-    _admin: Usuario = Depends(solo_admin),
 ):
     try:
         return await usuario_crud.get_by_id(db, usuario_id)
@@ -101,7 +106,6 @@ async def obtener_usuario(
 async def crear_usuario(
     data: UsuarioAdminCreate,
     db: AsyncSession = Depends(get_db),
-    _admin: Usuario = Depends(solo_admin),
 ):
     try:
         return await usuario_crud.create_usuario(db, data)
@@ -125,7 +129,6 @@ async def reemplazar_usuario(
     usuario_id: IdPath,
     data: UsuarioReplace,
     db: AsyncSession = Depends(get_db),
-    _admin: Usuario = Depends(solo_admin),
 ):
     try:
         return await usuario_crud.replace_usuario(db, usuario_id, data)
@@ -144,7 +147,6 @@ async def actualizar_usuario(
     usuario_id: IdPath,
     data: UsuarioUpdate,
     db: AsyncSession = Depends(get_db),
-    _admin: Usuario = Depends(solo_admin),
 ):
     try:
         return await usuario_crud.update_usuario(db, usuario_id, data)

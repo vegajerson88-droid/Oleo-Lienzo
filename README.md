@@ -10,6 +10,20 @@ Software · SENA.
 
 ---
 
+## Aplicación en producción
+
+| | |
+|---|---|
+| **Aplicación** | https://oleo-lienzo.vercel.app |
+| **API** | https://oleo-lienzo-api.onrender.com |
+| **Documentación de la API** | https://oleo-lienzo-api.onrender.com/docs |
+
+Desplegada en Vercel (frontend), Render (backend) y Neon (PostgreSQL 18).
+
+> El plan gratuito de Render duerme el servicio tras 15 minutos sin tráfico.
+> La primera petición después de dormir puede tardar unos 50 segundos.
+
+
 ## Contenido
 
 - [Qué hace la aplicación](#qué-hace-la-aplicación)

@@ -10,6 +10,17 @@ ninguna pregunta del instructor quede sin respuesta demostrada.
 
 ---
 
+## URLs para la sustentación
+
+| | |
+|---|---|
+| **Aplicación** | https://oleo-lienzo.vercel.app |
+| **API** | https://oleo-lienzo-api.onrender.com |
+| **Swagger** | https://oleo-lienzo-api.onrender.com/docs |
+| **Repositorio** | https://github.com/vegajerson88-droid/Oleo-Lienzo |
+
+---
+
 ## Antes de empezar: 10 minutos de preparación
 
 | # | Qué hacer | Por qué |

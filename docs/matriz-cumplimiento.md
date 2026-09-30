@@ -18,23 +18,25 @@ manuales por API y recorrido completo en navegador real.
 | Segundo avance — React + Tailwind | 21 | 21 | 0 | 0 |
 | Tercer avance — Backend, BD, JWT, roles | 25 | 25 | 0 | 0 |
 | Cuarto avance — FastAPI | 31 | 31 | 0 | 0 |
-| Quinto avance — Gestión comercial e IA | 20 | 19 | 1 | 0 |
+| Quinto avance — Gestión comercial e IA | 20 | 20 | 0 | 0 |
 | Matriz de validación SENA | 24 | 24 | 0 | 0 |
 | Lista de chequeo — valoración final | 65 | 64 | 1 | 0 |
-| **Total** | **186** | **184** | **2** | **0** |
+| **Total** | **186** | **185** | **1** | **0** |
 
-Quedan dos puntos abiertos, y ninguno depende del código:
+Queda **un solo punto abierto**, y es una decisión de diseño argumentada,
+no una carencia:
 
-1. **El despliegue con URL pública**, que necesita las cuentas de quien
-   presenta el proyecto. Todo lo demás está preparado: `Dockerfile`,
-   `render.yaml`, `frontend/vercel.json`, `docker-compose.yml` y la guía
-   paso a paso en `docs/despliegue.md`.
-2. **El criterio 1 de la valoración final** («las rutas no contienen
-   verbos»): las rutas de autenticación —`/api/auth/login`,
-   `/api/auth/registro`— sí los llevan. Es una excepción consciente y
-   argumentada en `docs/diseno-api.md`: es la convención establecida para
-   autenticación y se prefirió a un sustantivo artificial como
-   `/api/sesiones`. Los 64 criterios restantes se cumplen.
+**El criterio 1 de la valoración final** («las rutas no contienen verbos»):
+las rutas de autenticación —`/api/auth/login`, `/api/auth/registro`— sí los
+llevan. Es una excepción consciente y explicada en `docs/diseno-api.md`: es
+la convención establecida para autenticación, la usan OAuth2 y prácticamente
+todas las APIs, y se prefirió a forzar un sustantivo artificial como
+`/api/sesiones`. Los 64 criterios restantes se cumplen.
+
+El despliegue, que era el otro punto pendiente, **está resuelto**: la
+aplicación funciona en producción y se verificó de extremo a extremo —login
+con los tres roles, dashboards, descarga de factura en PDF, reportes en PDF y
+Excel, chatbot con IA y rechazo de orígenes no autorizados.
 
 ### Nota sobre el tercer avance
 
@@ -168,7 +170,7 @@ sobre FastAPI.
 | 17 | Chatbot de atención al cliente | ✅ | Widget flotante |
 | 18 | Chatbot integrado con Inteligencia Artificial | ✅ | Groq, con respaldo local declarado |
 | 19 | Gestión segura de la API Key | ✅ | `GROQ_API_KEY` en `.env`, nunca en el código |
-| 20 | **Despliegue con URL pública** | ⚠️ | Preparado: `Dockerfile`, `railway.json`, `docker-compose.yml` y `docs/despliegue.md`. **Falta ejecutar el despliegue con las credenciales del aprendiz.** |
+| 20 | **Despliegue con URL pública** | ✅ | Desplegado y verificado: https://oleo-lienzo.vercel.app (Vercel) · https://oleo-lienzo-api.onrender.com (Render) · Neon PostgreSQL 18 |
 
 ### Requerimientos técnicos adicionales
 

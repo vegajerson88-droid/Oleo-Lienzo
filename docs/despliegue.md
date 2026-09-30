@@ -4,7 +4,7 @@ Guía para poner Óleo & Lienzo en producción con tres servicios gratuitos:
 
 | Capa | Plataforma | Por qué |
 |---|---|---|
-| Base de datos | **Neon** | PostgreSQL 16 gestionado, plan gratuito sin caducidad |
+| Base de datos | **Neon** | PostgreSQL gestionado, plan gratuito sin caducidad |
 | Backend | **Render** | Despliega desde el `Dockerfile` del repositorio |
 | Frontend | **Vercel** | Construye Vite y sirve por CDN |
 
@@ -22,8 +22,9 @@ backend.
 1. Entra en <https://neon.tech> y crea una cuenta (puedes usar GitHub).
 2. **Create project**:
    - Nombre: `oleo-lienzo`
-   - PostgreSQL: **16**
-   - Región: la más cercana (`AWS us-east-2` sirve bien desde Colombia).
+   - PostgreSQL: la versión que ofrezca por defecto. Verificado con **18.6**;
+     `psycopg 3.3` y SQLAlchemy 2.1 la manejan sin ajustes.
+   - Región: `AWS US East 2 (Ohio)`, la más cercana desde Colombia.
 3. Al terminar, Neon muestra la cadena de conexión. Cópiala: solo se enseña
    entera una vez.
 
@@ -42,6 +43,12 @@ postgresql+psycopg://usuario:contraseña@ep-algo-123456.us-east-2.aws.neon.tech/
 
 > Es el error más común de todo el despliegue. Si dejas `postgresql://` a
 > secas, el backend arranca y falla en la primera consulta.
+
+**Apaga también «Connection pooling»** en ese mismo diálogo. Con el pooling
+activado la cadena apunta a un PgBouncer en modo transacción, y las
+sentencias preparadas que usa `psycopg` pueden fallar de forma
+intermitente. La aplicación ya tiene su propio pool en SQLAlchemy, así que
+no hace falta otro por encima.
 
 Guarda esa cadena: es el valor de `DATABASE_URL`.
 

@@ -17,7 +17,7 @@ services:
     dockerfilePath: ./backend/Dockerfile
     dockerContext: ./backend
     plan: free
-    region: oregon
+    region: ohio
     branch: main
 
     # Render comprueba esta ruta para decidir si el servicio está sano.

@@ -1,7 +1,10 @@
 # ── Imagen del backend de Óleo & Lienzo ───────────────────────────────────
 # Construir:  docker build -t oleo-lienzo-api ./backend
 # Ejecutar:   docker run -p 8000:8000 --env-file backend/.env oleo-lienzo-api
-FROM python:3.11-slim
+# Python 3.12: la misma versión con la que se desarrolla y con la que
+# corre la integración continua. Las versiones fijadas en requirements.txt
+# se resolvieron contra 3.12; con 3.11 algunas ni siquiera existen.
+FROM python:3.12-slim
 
 # Evita los .pyc y fuerza la salida sin búfer, para ver los logs al instante.
 ENV PYTHONDONTWRITEBYTECODE=1 \

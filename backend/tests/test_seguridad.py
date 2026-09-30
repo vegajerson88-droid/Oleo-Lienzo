@@ -68,10 +68,15 @@ async def test_ninguna_respuesta_expone_el_hash_de_la_contrasena(client, token_a
 
 
 async def test_la_configuracion_no_lleva_secretos_escritos_en_el_codigo():
-    """Las credenciales de los servicios externos vienen del entorno."""
+    """Las credenciales de los servicios externos vienen del entorno.
+
+    Se construye la configuración ignorando el `.env` local (`_env_file=None`):
+    lo que se comprueba es que **el código** no lleve secretos escritos, no lo
+    que tenga configurado quien ejecuta las pruebas.
+    """
     from app.core.config import Settings
 
-    por_defecto = Settings()
+    por_defecto = Settings(_env_file=None)
     assert por_defecto.groq_api_key == ""
     assert por_defecto.stripe_secret_key == ""
     assert por_defecto.stripe_webhook_secret == ""

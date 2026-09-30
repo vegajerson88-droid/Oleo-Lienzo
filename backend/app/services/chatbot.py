@@ -205,11 +205,16 @@ async def generar_respuesta(mensaje_usuario: str, historial: list[Mensaje], cata
                     "model": settings.groq_model,
                     "messages": mensajes,
                     "max_tokens": settings.groq_max_tokens,
+                    "reasoning_effort": settings.groq_reasoning_effort,
                     "temperature": 0.6,
                 },
             )
             respuesta.raise_for_status()
-            contenido = respuesta.json()["choices"][0]["message"]["content"].strip()
+            contenido = (respuesta.json()["choices"][0]["message"].get("content") or "").strip()
+            if not contenido:
+                # Respondió, pero sin contenido. Se trata como fallo para
+                # degradar al modo local en vez de devolver un mensaje vacío.
+                raise ValueError("respuesta vacía del proveedor")
             return {
                 "respuesta": contenido,
                 "generado_por_ia": True,

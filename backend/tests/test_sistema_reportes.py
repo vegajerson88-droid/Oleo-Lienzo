@@ -257,7 +257,9 @@ async def test_el_diagnostico_es_solo_para_admin_403(client, token_cliente):
     assert resp.status_code == 403
 
 
-async def test_el_diagnostico_comprueba_cada_dependencia(client, token_admin):
+async def test_el_diagnostico_comprueba_cada_dependencia(
+    client, token_admin, sin_integraciones_externas
+):
     """No devuelve «ok» a secas: consulta cada servicio y reporta su latencia."""
     resp = await client.get("/api/sistema/diagnostico", headers=cabecera(token_admin))
     assert resp.status_code == 200
@@ -310,7 +312,9 @@ async def test_parametros_de_la_ia_validados_422(client, token_empleado):
     assert resp.status_code == 422
 
 
-async def test_descripcion_sugerida_sin_clave_degrada(client, token_empleado):
+async def test_descripcion_sugerida_sin_clave_degrada(
+    client, token_empleado, sin_integraciones_externas
+):
     resp = await client.get(
         "/api/ia/descripcion-sugerida?titulo=Nocturno&tecnica=Óleo",
         headers=cabecera(token_empleado),

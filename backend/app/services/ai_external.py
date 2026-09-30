@@ -35,8 +35,11 @@ async def generar_descripcion_sugerida(titulo: str, tecnica: str) -> dict:
     payload = {
         "model": settings.groq_model,
         "messages": [{"role": "user", "content": prompt}],
-        "max_tokens": 80,
+        # Holgado a propósito: los modelos de razonamiento consumen parte del
+        # presupuesto pensando, y con un límite corto la frase llegaría vacía.
+        "max_tokens": 400,
         "temperature": 0.8,
+        "reasoning_effort": settings.groq_reasoning_effort,
     }
     headers = {"Authorization": f"Bearer {settings.groq_api_key}"}
 
@@ -50,13 +53,24 @@ async def generar_descripcion_sugerida(titulo: str, tecnica: str) -> dict:
                     headers=headers,
                 )
                 respuesta.raise_for_status()
-                texto = respuesta.json()["choices"][0]["message"]["content"].strip()
+                texto = (respuesta.json()["choices"][0]["message"].get("content") or "").strip()
+                if not texto:
+                    # El proveedor contestó, pero sin contenido útil. Decir que
+                    # está disponible y devolver una cadena vacía sería mentir:
+                    # se trata como fallo y se reintenta.
+                    raise ValueError("el proveedor devolvió una respuesta vacía")
                 return {
                     "disponible": True,
                     "descripcion": texto.strip('"'),
                     "modelo": settings.groq_model,
                 }
-            except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.RequestError) as exc:
+            except (
+                httpx.TimeoutException,
+                httpx.HTTPStatusError,
+                httpx.RequestError,
+                KeyError,
+                ValueError,
+            ) as exc:
                 ultimo_error = f"{type(exc).__name__}: {exc}"
                 logger.info("Intento %d de IA externa fallido: %s", intento + 1, ultimo_error)
 

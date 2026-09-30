@@ -154,7 +154,7 @@ async def test_el_chatbot_responde_sin_iniciar_sesion(client):
     assert data["conversacion_id"] > 0
 
 
-async def test_sin_clave_de_groq_declara_el_modo_local(client):
+async def test_sin_clave_de_groq_declara_el_modo_local(client, sin_integraciones_externas):
     """No debe fingir que respondió la IA cuando no está configurada."""
     resp = await client.post(
         "/api/chatbot/mensaje",

@@ -190,3 +190,19 @@ async def servicio(client, token_empleado):
 async def id_cliente(client, token_admin):
     resp = await client.get("/api/usuarios?rol=cliente", headers=cabecera(token_admin))
     return resp.json()["items"][0]["id"]
+
+
+@pytest_asyncio.fixture
+async def sin_integraciones_externas(monkeypatch):
+    """Fuerza que no haya credenciales de servicios externos configuradas.
+
+    Sin esto, las pruebas que comprueban la degradación dependerían del `.env`
+    de quien las ejecuta: pasarían en un portátil sin clave de Groq y fallarían
+    en otro que sí la tenga. Una prueba no puede depender del entorno local.
+    """
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    for variable in ("groq_api_key", "stripe_secret_key", "email_host", "email_password"):
+        monkeypatch.setattr(settings, variable, "")
+    return settings

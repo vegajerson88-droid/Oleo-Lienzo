@@ -48,9 +48,17 @@ class Settings(BaseSettings):
     # ── IA: Groq (plan gratuito) ──────────────────────────────────────────
     groq_api_key: str = ""
     groq_base_url: str = "https://api.groq.com/openai/v1"
-    groq_model: str = "llama-3.3-70b-versatile"
+    # Groq retira modelos cada cierto tiempo; si este deja de existir la API
+    # responde 404 y el chatbot degrada. Los vigentes se consultan en
+    # GET https://api.groq.com/openai/v1/models
+    groq_model: str = "openai/gpt-oss-120b"
     groq_timeout_seconds: float = 20.0
     groq_max_tokens: int = 500
+    # Los modelos de razonamiento gastan tokens «pensando» antes de responder.
+    # Con esfuerzo alto y un presupuesto corto, el razonamiento se come el
+    # límite y la respuesta llega vacía. Para redactar una frase de catálogo
+    # no hace falta razonar mucho.
+    groq_reasoning_effort: str = "low"
 
     # ── Pasarela de pago: Stripe ──────────────────────────────────────────
     stripe_secret_key: str = ""

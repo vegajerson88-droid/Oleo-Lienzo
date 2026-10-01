@@ -1,4 +1,4 @@
-"""Exportación del reporte diario de ventas a Excel (.xlsx).
+"""Exportación de los reportes de ventas a Excel (.xlsx).
 
 El archivo se entrega con las columnas separadas, tipos numéricos reales
 (no texto) y un autofiltro activo, para que quien lo reciba pueda ordenar,
@@ -43,16 +43,14 @@ CABECERAS = [
 ]
 
 
-def generar_reporte_ventas_excel(ventas: list, dia) -> bytes:
+def generar_reporte_ventas_excel(ventas: list, periodo) -> bytes:
     wb = Workbook()
     hoja = wb.active
     hoja.title = "Ventas"
 
     # ── Encabezado del documento ─────────────────────────────────────────
     hoja.merge_cells(start_row=1, start_column=1, end_row=1, end_column=len(CABECERAS))
-    titulo = hoja.cell(
-        row=1, column=1, value=f"{settings.empresa_nombre} · Reporte diario de ventas"
-    )
+    titulo = hoja.cell(row=1, column=1, value=f"{settings.empresa_nombre} · {periodo.titulo}")
     titulo.font = Font(bold=True, size=14, color=PAPEL)
     titulo.fill = PatternFill("solid", fgColor=VERDE)
     titulo.alignment = Alignment(horizontal="left", vertical="center", indent=1)
@@ -62,8 +60,7 @@ def generar_reporte_ventas_excel(ventas: list, dia) -> bytes:
     subtitulo = hoja.cell(
         row=2,
         column=1,
-        value=f"Fecha del reporte: {dia.strftime('%d/%m/%Y')}  ·  "
-        f"NIT {settings.empresa_nit}  ·  {settings.empresa_email}",
+        value=f"{periodo.descripcion}  ·  NIT {settings.empresa_nit}  ·  {settings.empresa_email}",
     )
     subtitulo.font = Font(size=9, color="FF6B675F")
     subtitulo.alignment = Alignment(horizontal="left", vertical="center", indent=1)
@@ -119,7 +116,14 @@ def generar_reporte_ventas_excel(ventas: list, dia) -> bytes:
 
     if not ventas:
         hoja.cell(
-            row=fila, column=1, value=f"No se registraron ventas el {dia.strftime('%d/%m/%Y')}."
+            row=fila,
+            column=1,
+            value=(
+                f"No se registraron ventas el {periodo.desde.strftime('%d/%m/%Y')}."
+                if periodo.es_un_solo_dia
+                else f"No se registraron ventas entre el {periodo.desde.strftime('%d/%m/%Y')} "
+                f"y el {periodo.hasta.strftime('%d/%m/%Y')}."
+            ),
         )
         hoja.cell(row=fila, column=1).font = Font(italic=True, size=9, color="FF6B675F")
         fila += 1

@@ -243,11 +243,16 @@ async def list_ventas(
     return list((await db.execute(query)).unique().scalars().all()), total
 
 
-async def ventas_del_dia(db: AsyncSession, dia: date) -> list[Venta]:
-    """Todas las ventas de una fecha, para el reporte diario."""
-    filtros = VentaFiltros(fecha_inicio=dia, fecha_fin=dia)
+async def ventas_del_rango(db: AsyncSession, desde: date, hasta: date) -> list[Venta]:
+    """Todas las ventas entre dos fechas, ambas incluidas. Alimenta los reportes."""
+    filtros = VentaFiltros(fecha_inicio=desde, fecha_fin=hasta)
     query = _aplicar_filtros(select(Venta).options(*_RELACIONES), filtros)
     return list((await db.execute(query.order_by(Venta.creado_en))).unique().scalars().all())
+
+
+async def ventas_del_dia(db: AsyncSession, dia: date) -> list[Venta]:
+    """Las ventas de una fecha concreta. Caso particular de `ventas_del_rango`."""
+    return await ventas_del_rango(db, dia, dia)
 
 
 async def cambiar_estado(db: AsyncSession, venta_id: int, nuevo_estado: EstadoVenta) -> Venta:

@@ -114,7 +114,15 @@ h1, h2, h3, h4 {
    Utilidades de composición
    ═══════════════════════════════════════════════════════════════════════ */
 @utility contenedor {
-  @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-8;
+  /* Ancho del contenido. Se ensancha por tramos en vez de quedarse clavado
+     en un máximo pequeño: en un monitor de 1920 px, un límite de 1152 px
+     dejaba casi 400 px vacíos a cada lado. */
+  @apply mx-auto w-full max-w-6xl px-4 sm:px-6 lg:px-10 xl:max-w-[88rem] 2xl:max-w-[100rem];
+}
+
+/* Variante estrecha, para texto largo donde una línea ancha se lee peor. */
+@utility contenedor-lectura {
+  @apply mx-auto w-full max-w-4xl px-4 sm:px-6 lg:px-8;
 }
 
 @utility etiqueta {

@@ -326,7 +326,7 @@ async def test_descripcion_sugerida_sin_clave_degrada(
 
 
 # ── Pagos ────────────────────────────────────────────────────────────────
-async def test_la_configuracion_expone_solo_la_clave_publica(client):
+async def test_la_configuracion_expone_solo_la_clave_publica(client, sin_integraciones_externas):
     resp = await client.get("/api/pagos/configuracion")
     assert resp.status_code == 200
     data = resp.json()
@@ -335,7 +335,9 @@ async def test_la_configuracion_expone_solo_la_clave_publica(client):
     assert "secret" not in resp.text.lower()
 
 
-async def test_checkout_sin_stripe_configurado_422(client, obra, token_admin, id_cliente):
+async def test_checkout_sin_stripe_configurado_422(
+    client, obra, token_admin, id_cliente, sin_integraciones_externas
+):
     venta = await _venta(client, token_admin, obra, id_cliente)
     resp = await client.post(
         "/api/pagos/checkout", json={"venta_id": venta["id"]}, headers=cabecera(token_admin)
@@ -368,3 +370,83 @@ async def test_el_webhook_rechaza_una_peticion_sin_firma_400(client):
         headers={"Content-Type": "application/json"},
     )
     assert resp.status_code == 400
+
+
+# ── Periodos del reporte (día, quincena, mes) ────────────────────────────
+async def test_el_reporte_cubre_quincena_y_mes(client, obra, token_admin, id_cliente):
+    """Los tres periodos devuelven su rango, no solo un día suelto."""
+    await _venta(client, token_admin, obra, id_cliente)
+
+    rangos = {}
+    for periodo in ("dia", "quincena", "mes"):
+        resp = await client.get(
+            f"/api/reportes/ventas-diarias?periodo={periodo}", headers=cabecera(token_admin)
+        )
+        assert resp.status_code == 200, periodo
+        datos = resp.json()["periodo"]
+        assert datos["tipo"] == periodo
+        rangos[periodo] = (datos["desde"], datos["hasta"])
+
+    # El día cubre una sola fecha; la quincena y el mes empiezan antes o igual.
+    assert rangos["dia"][0] == rangos["dia"][1]
+    assert rangos["quincena"][0] < rangos["dia"][0]
+    assert rangos["mes"][0] <= rangos["dia"][0]
+    # Los tres terminan hoy.
+    assert rangos["dia"][1] == rangos["quincena"][1] == rangos["mes"][1]
+
+
+async def test_la_quincena_abarca_quince_dias(client, token_admin):
+    from datetime import date
+
+    datos = (
+        await client.get(
+            "/api/reportes/ventas-diarias?periodo=quincena&dia=2026-03-20",
+            headers=cabecera(token_admin),
+        )
+    ).json()["periodo"]
+
+    desde = date.fromisoformat(datos["desde"])
+    hasta = date.fromisoformat(datos["hasta"])
+    # Quince días contando el de referencia: del 6 al 20 inclusive.
+    assert (hasta - desde).days == 14
+    assert hasta.isoformat() == "2026-03-20"
+
+
+async def test_el_mes_empieza_el_dia_uno(client, token_admin):
+    datos = (
+        await client.get(
+            "/api/reportes/ventas-diarias?periodo=mes&dia=2026-03-20",
+            headers=cabecera(token_admin),
+        )
+    ).json()["periodo"]
+    assert datos["desde"] == "2026-03-01"
+    assert datos["hasta"] == "2026-03-20"
+
+
+async def test_el_rango_personalizado_se_valida(client, token_admin):
+    sin_rango = await client.get(
+        "/api/reportes/ventas-diarias?periodo=personalizado", headers=cabecera(token_admin)
+    )
+    assert sin_rango.status_code == 422
+
+    invertido = await client.get(
+        "/api/reportes/ventas-diarias?periodo=personalizado&desde=2026-03-20&hasta=2026-03-01",
+        headers=cabecera(token_admin),
+    )
+    assert invertido.status_code == 422
+
+
+async def test_las_descargas_nombran_el_rango(client, token_admin):
+    """El nombre del archivo refleja el periodo, no siempre un solo día."""
+    pdf = await client.get(
+        "/api/reportes/ventas-diarias/pdf?periodo=quincena&dia=2026-03-20",
+        headers=cabecera(token_admin),
+    )
+    assert pdf.status_code == 200
+    assert "2026-03-06_a_2026-03-20" in pdf.headers["content-disposition"]
+
+    excel = await client.get(
+        "/api/reportes/ventas-diarias/excel?periodo=dia&dia=2026-03-20",
+        headers=cabecera(token_admin),
+    )
+    assert "2026-03-20.xlsx" in excel.headers["content-disposition"]

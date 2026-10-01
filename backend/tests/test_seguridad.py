@@ -49,6 +49,35 @@ async def test_las_cabeceras_de_seguridad_viajan_en_la_respuesta(client):
     assert resp.headers["referrer-policy"] == "no-referrer"
 
 
+async def test_preflight_cors_admite_puerto_vite_variable_solo_en_desarrollo(client):
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    origen_local = "http://localhost:5174"
+    respuesta_local = await client.options(
+        "/api/auth/recuperar-password",
+        headers={
+            "Origin": origen_local,
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    origen_local_permitido = (
+        origen_local in settings.cors_origins_list or not settings.es_produccion
+    )
+    assert respuesta_local.status_code == (200 if origen_local_permitido else 400)
+
+    respuesta_externa = await client.options(
+        "/api/auth/recuperar-password",
+        headers={
+            "Origin": "https://sitio-no-autorizado.example",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "content-type",
+        },
+    )
+    assert respuesta_externa.status_code == 400
+
+
 async def test_los_errores_comparten_un_formato_uniforme(client, token_admin):
     no_encontrado = await client.get("/api/usuarios/9999", headers=cabecera(token_admin))
     assert no_encontrado.status_code == 404

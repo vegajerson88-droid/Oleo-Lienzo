@@ -177,6 +177,28 @@ async def test_recuperar_password_no_revela_si_el_correo_existe(client):
     assert registrado.json() == desconocido.json()
 
 
+async def test_recuperar_password_programa_correo_con_token_temporal(client, monkeypatch):
+    from app.core.security import decode_reset_token
+    from app.services import email as email_service
+
+    enviados = []
+
+    async def capturar_correo(nombre, email, token):
+        enviados.append((nombre, email, token))
+
+    monkeypatch.setattr(email_service, "enviar_recuperacion", capturar_correo)
+    respuesta = await client.post(
+        "/api/auth/recuperar-password", json={"email": "cliente@test.com"}
+    )
+
+    assert respuesta.status_code == 200
+    assert len(enviados) == 1
+    nombre, email, token = enviados[0]
+    assert nombre == "Cliente"
+    assert email == "cliente@test.com"
+    assert decode_reset_token(token)["sub"] == email
+
+
 async def test_restablecer_con_token_invalido_400(client):
     resp = await client.post(
         "/api/auth/restablecer-password",
@@ -217,3 +239,41 @@ async def test_token_expirado_401(client):
 
     expirado = create_access_token("admin@test.com", "administrador", expires_minutes=-1)
     assert (await client.get("/api/auth/me", headers=cabecera(expirado))).status_code == 401
+
+
+async def test_la_recuperacion_declara_si_el_correo_esta_operativo(
+    client, sin_integraciones_externas
+):
+    """Sin SMTP no se puede afirmar que se envió un correo.
+
+    El mensaje sigue siendo el mismo exista o no la cuenta —para no revelar
+    qué correos están registrados—, pero `correo_operativo` describe el
+    servidor, no la cuenta, y permite avisar en vez de dejar esperando.
+    """
+    resp = await client.post("/api/auth/recuperar-password", json={"email": "cliente@test.com"})
+
+    assert resp.status_code == 200
+    cuerpo = resp.json()
+    assert cuerpo["correo_operativo"] is False
+    # En desarrollo sin SMTP se entrega el enlace para poder probar el flujo.
+    assert cuerpo["enlace_desarrollo"] is not None
+    assert "/restablecer?token=" in cuerpo["enlace_desarrollo"]
+
+
+async def test_el_enlace_de_desarrollo_no_aparece_para_cuentas_inexistentes(
+    client, sin_integraciones_externas
+):
+    """No se puede usar como oráculo de qué correos existen."""
+    resp = await client.post("/api/auth/recuperar-password", json={"email": "nadie@test.com"})
+    assert resp.json()["enlace_desarrollo"] is None
+
+
+async def test_en_produccion_nunca_se_entrega_el_enlace(
+    client, sin_integraciones_externas, monkeypatch
+):
+    """Devolver el enlace en producción sería regalar el restablecimiento."""
+    from app.core.config import get_settings
+
+    monkeypatch.setattr(get_settings(), "environment", "production")
+    resp = await client.post("/api/auth/recuperar-password", json={"email": "cliente@test.com"})
+    assert resp.json()["enlace_desarrollo"] is None

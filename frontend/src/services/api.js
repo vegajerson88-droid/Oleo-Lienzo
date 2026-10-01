@@ -243,17 +243,17 @@ export const api = {
     descargar(`/facturas/${id}/pdf`, { token, nombrePorDefecto: `factura-${numero}.pdf` }),
 
   // ── Reportes ─────────────────────────────────────────────────────────
-  reporteDiario: (token, dia, signal) =>
-    request(`/reportes/ventas-diarias${queryString({ dia })}`, { token, signal }),
-  descargarReportePdf: (dia, token) =>
-    descargar(`/reportes/ventas-diarias/pdf${queryString({ dia })}`, {
+  reporteDiario: (token, params, signal) =>
+    request(`/reportes/ventas-diarias${queryString(params)}`, { token, signal }),
+  descargarReportePdf: (params, token) =>
+    descargar(`/reportes/ventas-diarias/pdf${queryString(params)}`, {
       token,
-      nombrePorDefecto: `reporte-ventas-${dia}.pdf`,
+      nombrePorDefecto: "reporte-ventas.pdf",
     }),
-  descargarReporteExcel: (dia, token) =>
-    descargar(`/reportes/ventas-diarias/excel${queryString({ dia })}`, {
+  descargarReporteExcel: (params, token) =>
+    descargar(`/reportes/ventas-diarias/excel${queryString(params)}`, {
       token,
-      nombrePorDefecto: `reporte-ventas-${dia}.xlsx`,
+      nombrePorDefecto: "reporte-ventas.xlsx",
     }),
 
   // ── Dashboard ────────────────────────────────────────────────────────

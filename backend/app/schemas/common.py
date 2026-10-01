@@ -40,6 +40,23 @@ class MensajeRespuesta(BaseModel):
 
     mensaje: str
 
+
+class RecuperacionRespuesta(BaseModel):
+    """Respuesta de la solicitud de recuperación de contraseña.
+
+    `correo_operativo` describe el **sistema**, no la cuenta: dice si el
+    servidor tiene SMTP configurado. Nunca revela si ese correo está
+    registrado, que es lo que esta pantalla debe seguir ocultando.
+
+    `enlace_desarrollo` solo aparece fuera de producción y cuando no hay SMTP:
+    permite probar el flujo completo sin un servidor de correo. En producción
+    vale siempre `None`.
+    """
+
+    mensaje: str
+    correo_operativo: bool
+    enlace_desarrollo: str | None = None
+
     model_config = ConfigDict(
         json_schema_extra={"example": {"mensaje": "Operación completada correctamente."}}
     )

@@ -1,11 +1,13 @@
-"""Reporte diario de ventas en JSON, PDF y Excel."""
+"""Reportes de ventas en JSON, PDF y Excel, por día, quincena o mes."""
 
 from datetime import date, datetime, timezone
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import periodos
 from app.core.dinero import a_decimal
+from app.core.periodos import Periodo, TipoPeriodo
 from app.crud import venta as venta_crud
 from app.database import get_db
 from app.dependencies.auth import admin_o_empleado
@@ -25,12 +27,35 @@ TIPO_EXCEL = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 DiaQuery = Query(
     default=None,
-    description="Fecha del reporte en formato AAAA-MM-DD. Por defecto, hoy.",
+    description="Fecha de referencia (AAAA-MM-DD). Por defecto, hoy.",
 )
+PeriodoQuery = Query(
+    default=TipoPeriodo.dia,
+    description=(
+        "Qué abarca el reporte:\n\n"
+        "- `dia`: solo la fecha de `dia` (por defecto, hoy).\n"
+        "- `quincena`: los últimos 15 días contando esa fecha.\n"
+        "- `mes`: desde el día 1 de ese mes hasta esa fecha.\n"
+        "- `personalizado`: el rango `desde`–`hasta`."
+    ),
+)
+DesdeQuery = Query(default=None, description="Inicio del rango personalizado.")
+HastaQuery = Query(default=None, description="Fin del rango personalizado.")
 
 
-def _dia_o_hoy(dia: date | None) -> date:
-    return dia or datetime.now(timezone.utc).date()
+def obtener_periodo(
+    periodo: TipoPeriodo = PeriodoQuery,
+    dia: date | None = DiaQuery,
+    desde: date | None = DesdeQuery,
+    hasta: date | None = HastaQuery,
+) -> Periodo:
+    """Resuelve el rango del reporte. Es dependencia para no repetirla en los tres endpoints."""
+    try:
+        return periodos.construir(periodo, dia=dia, desde=desde, hasta=hasta)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)
+        ) from exc
 
 
 @router.get(
@@ -43,14 +68,21 @@ def _dia_o_hoy(dia: date | None) -> date:
     ),
 )
 async def reporte_ventas_diarias(
-    dia: date | None = DiaQuery,
+    periodo: Periodo = Depends(obtener_periodo),
     db: AsyncSession = Depends(get_db),
 ):
-    fecha = _dia_o_hoy(dia)
-    ventas = await venta_crud.ventas_del_dia(db, fecha)
+    ventas = await venta_crud.ventas_del_rango(db, periodo.desde, periodo.hasta)
 
     return {
-        "fecha": fecha.isoformat(),
+        # `fecha` se conserva por compatibilidad: es el final del rango.
+        "fecha": periodo.hasta.isoformat(),
+        "periodo": {
+            "tipo": periodo.tipo.value,
+            "desde": periodo.desde.isoformat(),
+            "hasta": periodo.hasta.isoformat(),
+            "titulo": periodo.titulo,
+            "descripcion": periodo.descripcion,
+        },
         "generado_en": datetime.now(timezone.utc).isoformat(),
         "empresa": {"nombre": "Óleo & Lienzo"},
         "resumen": {
@@ -99,18 +131,16 @@ async def reporte_ventas_diarias(
     response_class=Response,
 )
 async def reporte_ventas_pdf(
-    dia: date | None = DiaQuery,
+    periodo: Periodo = Depends(obtener_periodo),
     db: AsyncSession = Depends(get_db),
 ):
-    fecha = _dia_o_hoy(dia)
-    ventas = await venta_crud.ventas_del_dia(db, fecha)
-    pdf = generar_reporte_ventas_pdf(ventas, fecha)
+    ventas = await venta_crud.ventas_del_rango(db, periodo.desde, periodo.hasta)
+    pdf = generar_reporte_ventas_pdf(ventas, periodo)
+    nombre = f"reporte-ventas-{periodo.sufijo_archivo}.pdf"
     return Response(
         content=pdf,
         media_type="application/pdf",
-        headers={
-            "Content-Disposition": f'attachment; filename="reporte-ventas-{fecha.isoformat()}.pdf"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
     )
 
 
@@ -127,16 +157,14 @@ async def reporte_ventas_pdf(
     response_class=Response,
 )
 async def reporte_ventas_excel(
-    dia: date | None = DiaQuery,
+    periodo: Periodo = Depends(obtener_periodo),
     db: AsyncSession = Depends(get_db),
 ):
-    fecha = _dia_o_hoy(dia)
-    ventas = await venta_crud.ventas_del_dia(db, fecha)
-    libro = generar_reporte_ventas_excel(ventas, fecha)
+    ventas = await venta_crud.ventas_del_rango(db, periodo.desde, periodo.hasta)
+    libro = generar_reporte_ventas_excel(ventas, periodo)
+    nombre = f"reporte-ventas-{periodo.sufijo_archivo}.xlsx"
     return Response(
         content=libro,
         media_type=TIPO_EXCEL,
-        headers={
-            "Content-Disposition": f'attachment; filename="reporte-ventas-{fecha.isoformat()}.xlsx"'
-        },
+        headers={"Content-Disposition": f'attachment; filename="{nombre}"'},
     )

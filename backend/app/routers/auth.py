@@ -19,7 +19,7 @@ from app.database import get_db
 from app.dependencies.auth import get_current_user
 from app.dependencies.common import RESPUESTA_409, RESPUESTA_422, RESPUESTAS_AUTH
 from app.models.usuario import Usuario
-from app.schemas.common import MensajeRespuesta
+from app.schemas.common import MensajeRespuesta, RecuperacionRespuesta
 from app.schemas.usuario import (
     CambiarPasswordRequest,
     LoginRequest,
@@ -148,12 +148,17 @@ async def me(usuario: Usuario = Depends(get_current_user)):
 
 @router.post(
     "/recuperar-password",
-    response_model=MensajeRespuesta,
+    response_model=RecuperacionRespuesta,
     summary="Solicitar el enlace de recuperación de contraseña",
     description=(
         "Envía por correo un enlace con un token temporal.\n\n"
         "Responde siempre lo mismo exista o no la cuenta: de lo contrario, "
-        "este endpoint permitiría averiguar qué correos están registrados."
+        "este endpoint permitiría averiguar qué correos están registrados.\n\n"
+        "`correo_operativo` indica si el **servidor** tiene SMTP configurado. "
+        "Si es `false`, el mensaje no se envió a ninguna parte y conviene "
+        "decírselo a quien lo pidió en vez de dejarlo esperando.\n\n"
+        "En desarrollo y sin SMTP, la respuesta incluye `enlace_desarrollo` "
+        "para poder completar la prueba. En producción nunca aparece."
     ),
     responses={429: {"description": "Demasiadas solicitudes: espera un minuto."}},
 )
@@ -165,16 +170,26 @@ async def recuperar_password(
     db: AsyncSession = Depends(get_db),
 ):
     usuario = await usuario_crud.get_by_email(db, data.email)
+    enlace = None
+
     if usuario and usuario.activo:
         token = create_reset_token(sub=usuario.email)
         background_tasks.add_task(
             email_service.enviar_recuperacion, usuario.nombre, usuario.email, token
         )
-    return MensajeRespuesta(
+        # Sin SMTP y fuera de producción, se devuelve el enlace para poder
+        # probar el flujo entero. En producción esto nunca se expone: sería
+        # entregar un restablecimiento a quien escriba un correo ajeno.
+        if not settings.email_configurado and not settings.es_produccion:
+            enlace = f"{settings.frontend_url}/restablecer?token={token}"
+
+    return RecuperacionRespuesta(
         mensaje=(
             "Si el correo está registrado, recibirás las instrucciones para "
             "restablecer tu contraseña en unos minutos."
-        )
+        ),
+        correo_operativo=settings.email_configurado,
+        enlace_desarrollo=enlace,
     )
 
 

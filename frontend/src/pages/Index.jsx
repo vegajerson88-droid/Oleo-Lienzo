@@ -44,53 +44,64 @@ function Index() {
           }}
         />
 
-        <div className="contenedor relative py-16 text-center sm:py-24">
-          <span className="inline-flex items-center gap-2 rounded-full border border-gold/40
-                           bg-gold/10 px-4 py-1.5 etiqueta text-gold">
-            <Sparkles size={12} aria-hidden="true" />
-            Colección permanente
-          </span>
+        {/* En pantallas grandes el hero se reparte en dos columnas: el texto a
+            la izquierda y las cifras a la derecha. Centrarlo todo dejaba el
+            contenido encajonado en mitad de la pantalla. */}
+        <div className="contenedor relative py-16 sm:py-24">
+          <div className="grid items-center gap-12 lg:grid-cols-[1.15fr_0.85fr] lg:gap-16">
+            <div className="text-center lg:text-left">
+              <span className="inline-flex items-center gap-2 rounded-full border border-gold/40
+                               bg-gold/10 px-4 py-1.5 etiqueta text-gold">
+                <Sparkles size={12} aria-hidden="true" />
+                Colección permanente
+              </span>
 
-          <h1 className="mx-auto mt-5 max-w-3xl font-display text-3xl leading-tight sm:text-5xl">
-            Diez lienzos, diez maneras de mirar el mundo
-          </h1>
+              <h1 className="mt-5 font-display text-3xl leading-tight sm:text-5xl xl:text-6xl">
+                Diez lienzos, diez maneras de mirar el mundo
+              </h1>
 
-          <p className="mx-auto mb-9 mt-5 max-w-xl text-sm text-paper/80 sm:text-base">
-            Recorre nuestra selección curada de piezas originales. Cada obra incluye
-            su ficha técnica y está disponible para adquisición directa con el artista.
-          </p>
+              <p className="mx-auto mt-5 max-w-xl text-sm text-paper/80 sm:text-base lg:mx-0">
+                Recorre nuestra selección curada de piezas originales. Cada obra incluye
+                su ficha técnica y está disponible para adquisición directa con el artista.
+              </p>
 
-          <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              to="/catalogo"
-              className="inline-flex items-center gap-2 rounded-lg bg-gold px-6 py-3.5 etiqueta
-                         font-semibold text-forest-dark transition-colors hover:bg-gold-soft"
-            >
-              Ver el catálogo
-              <ArrowRight size={14} aria-hidden="true" />
-            </Link>
-            <Link
-              to="/contacto"
-              className="inline-flex items-center gap-2 rounded-lg border border-paper/35 px-6 py-3.5
-                         etiqueta text-paper transition-colors hover:border-gold hover:text-gold"
-            >
-              Contáctanos
-            </Link>
-          </div>
-
-          {/* Cifras de la galería */}
-          <dl className="mx-auto mt-14 grid max-w-2xl grid-cols-2 gap-6 border-t border-paper/15
-                         pt-9 sm:grid-cols-4">
-            {CIFRAS.map(({ valor, etiqueta }) => (
-              <div key={etiqueta}>
-                <dt className="sr-only">{etiqueta}</dt>
-                <dd>
-                  <span className="block font-display text-2xl text-gold sm:text-3xl">{valor}</span>
-                  <span className="mt-1 block etiqueta text-paper/60">{etiqueta}</span>
-                </dd>
+              <div className="mt-9 flex flex-wrap justify-center gap-3 lg:justify-start">
+                <Link
+                  to="/catalogo"
+                  className="inline-flex items-center gap-2 rounded-lg bg-gold px-6 py-3.5 etiqueta
+                             font-semibold text-forest-dark transition-colors hover:bg-gold-soft"
+                >
+                  Ver el catálogo
+                  <ArrowRight size={14} aria-hidden="true" />
+                </Link>
+                <Link
+                  to="/contacto"
+                  className="inline-flex items-center gap-2 rounded-lg border border-paper/35 px-6
+                             py-3.5 etiqueta text-paper transition-colors hover:border-gold
+                             hover:text-gold"
+                >
+                  Contáctanos
+                </Link>
               </div>
-            ))}
-          </dl>
+            </div>
+
+            {/* Cifras de la galería */}
+            <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-2xl border
+                           border-paper/15 bg-paper/15">
+              {CIFRAS.map(({ valor, etiqueta }) => (
+                <div key={etiqueta} className="bg-forest-dark/60 px-6 py-8 text-center
+                                               backdrop-blur-sm sm:py-10">
+                  <dt className="sr-only">{etiqueta}</dt>
+                  <dd>
+                    <span className="block font-display text-3xl text-gold sm:text-4xl">
+                      {valor}
+                    </span>
+                    <span className="mt-1.5 block etiqueta text-paper/60">{etiqueta}</span>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </div>
         </div>
       </section>
 
@@ -124,7 +135,7 @@ function Index() {
 
       {/* Llamada a la acción */}
       <section className="border-y border-line bg-paper">
-        <div className="contenedor max-w-3xl py-14 text-center">
+        <div className="contenedor-lectura py-14 text-center">
           <h2 className="mb-3 font-display text-2xl sm:text-3xl">
             Únete a nuestra comunidad de coleccionistas
           </h2>

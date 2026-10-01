@@ -18,25 +18,40 @@ function hoyISO() {
   return new Date().toISOString().slice(0, 10);
 }
 
-/** Reporte diario de ventas, con exportación a PDF y a Excel. */
+/** Los tres periodos predefinidos. El rango exacto lo calcula el backend. */
+const PERIODOS = [
+  { id: "dia", etiqueta: "Un día" },
+  { id: "quincena", etiqueta: "Últimos 15 días" },
+  { id: "mes", etiqueta: "Este mes" },
+];
+
+/** Reporte de ventas por día, quincena o mes, con exportación a PDF y Excel. */
 function ReportesPanel({ token }) {
   const toast = useToast();
+  const [periodo, setPeriodo] = useState("quincena");
   const [dia, setDia] = useState(hoyISO);
-  const [diaConsultado, setDiaConsultado] = useState(hoyISO);
+  // Lo que se consultó de verdad: cambiar el formulario no dispara la petición
+  // hasta que se pulsa el botón, salvo al cambiar de periodo.
+  const [consulta, setConsulta] = useState({ periodo: "quincena", dia: hoyISO() });
   const [descargando, setDescargando] = useState(null);
 
   const reporte = useRecurso(
-    (signal) => api.reporteDiario(token, diaConsultado, signal),
-    [diaConsultado]
+    (signal) => api.reporteDiario(token, consulta, signal),
+    [consulta]
   );
+
+  function elegirPeriodo(id) {
+    setPeriodo(id);
+    setConsulta({ periodo: id, dia });
+  }
 
   async function descargar(formato) {
     setDescargando(formato);
     try {
       const nombre =
         formato === "pdf"
-          ? await api.descargarReportePdf(diaConsultado, token)
-          : await api.descargarReporteExcel(diaConsultado, token);
+          ? await api.descargarReportePdf(consulta, token)
+          : await api.descargarReporteExcel(consulta, token);
       toast.exito(`Descargado: ${nombre}`);
     } catch (error) {
       toast.error(error.message);
@@ -102,8 +117,11 @@ function ReportesPanel({ token }) {
 
   return (
     <Card
-      titulo="Reporte diario de ventas"
-      descripcion="Consulta el detalle de un día y expórtalo en PDF o Excel."
+      titulo={reporte.datos?.periodo?.titulo ?? "Reporte de ventas"}
+      descripcion={
+        reporte.datos?.periodo?.descripcion ??
+        "Elige el periodo y expórtalo en PDF o Excel."
+      }
       icono={FileText}
       acciones={
         <div className="flex gap-2">
@@ -122,32 +140,56 @@ function ReportesPanel({ token }) {
         </div>
       }
     >
-      <form
-        onSubmit={(evento) => {
-          evento.preventDefault();
-          setDiaConsultado(dia);
-        }}
-        className="mb-6 flex flex-wrap items-end gap-3"
-      >
-        <div className="min-w-[180px]">
-          <Input
-            label="Fecha del reporte" name="dia" type="date" max={hoyISO()}
-            value={dia} onChange={(evento) => setDia(evento.target.value)}
-          />
-        </div>
-        <Button type="submit" className="mb-5">Consultar</Button>
-        {dia !== hoyISO() && (
-          <Button
-            type="button" variant="fantasma" className="mb-5"
-            onClick={() => {
-              setDia(hoyISO());
-              setDiaConsultado(hoyISO());
-            }}
+      {/* Periodo: tres botones en vez de obligar a elegir un día suelto */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <span className="etiqueta mr-1 text-muted">Periodo</span>
+        {PERIODOS.map(({ id, etiqueta }) => (
+          <button
+            key={id}
+            type="button"
+            onClick={() => elegirPeriodo(id)}
+            aria-pressed={periodo === id}
+            className={`rounded-lg border px-4 py-2 etiqueta transition-colors ${
+              periodo === id
+                ? "border-forest bg-forest text-paper"
+                : "border-line bg-paper text-ink-soft hover:border-forest/50 hover:text-forest"
+            }`}
           >
-            Hoy
-          </Button>
-        )}
-      </form>
+            {etiqueta}
+          </button>
+        ))}
+      </div>
+
+      {/* La fecha solo tiene sentido en el periodo de un día; en los otros dos
+          actúa como fecha de referencia hacia atrás, así que se oculta. */}
+      {periodo === "dia" && (
+        <form
+          onSubmit={(evento) => {
+            evento.preventDefault();
+            setConsulta({ periodo: "dia", dia });
+          }}
+          className="mb-6 flex flex-wrap items-end gap-3"
+        >
+          <div className="min-w-[180px]">
+            <Input
+              label="Fecha del reporte" name="dia" type="date" max={hoyISO()}
+              value={dia} onChange={(evento) => setDia(evento.target.value)}
+            />
+          </div>
+          <Button type="submit" className="mb-5">Consultar</Button>
+          {dia !== hoyISO() && (
+            <Button
+              type="button" variant="fantasma" className="mb-5"
+              onClick={() => {
+                setDia(hoyISO());
+                setConsulta({ periodo: "dia", dia: hoyISO() });
+              }}
+            >
+              Hoy
+            </Button>
+          )}
+        </form>
+      )}
 
       {reporte.cargando ? (
         <SkeletonFilas filas={4} />
@@ -170,10 +212,10 @@ function ReportesPanel({ token }) {
           {reporte.datos.ventas.length === 0 ? (
             <EmptyState
               icono={FileText}
-              titulo={`No se registraron ventas el ${new Date(
-                `${diaConsultado}T00:00:00`
-              ).toLocaleDateString("es-CO", { dateStyle: "long" })}`}
-              descripcion="Prueba con otra fecha. La exportación seguirá funcionando y generará un reporte vacío."
+              titulo="No hay ventas en este periodo"
+              descripcion={`${
+                reporte.datos?.periodo?.descripcion ?? ""
+              }. Prueba con otro periodo; la exportación seguirá funcionando y generará un reporte vacío.`}
             />
           ) : (
             <Table columnas={columnas} filas={reporte.datos.ventas} claveFila={(v) => v.numero} />

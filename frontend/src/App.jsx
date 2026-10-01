@@ -28,34 +28,35 @@ function App() {
               <Route path="/quienes-somos" element={<QuienesSomos />} />
               <Route path="/contacto" element={<Contacto />} />
 
-              {/* Paneles protegidos por rol */}
-              <Route
-                path="/panel/cliente"
-                element={
-                  <RequireRole roles={["cliente"]}>
-                    <PanelCliente />
-                  </RequireRole>
-                }
-              />
-              <Route
-                path="/panel/empleado"
-                element={
-                  <RequireRole roles={["empleado"]}>
-                    <PanelEmpleado />
-                  </RequireRole>
-                }
-              />
-              <Route
-                path="/panel/administrador"
-                element={
-                  <RequireRole roles={["administrador"]}>
-                    <PanelAdministrador />
-                  </RequireRole>
-                }
-              />
-
               <Route path="*" element={<NoEncontrado />} />
             </Route>
+
+            {/* Paneles de gestión: sin cabecera ni pie, con barra lateral
+                propia y un enlace explícito para volver a la galería. */}
+            <Route
+              path="/panel/cliente"
+              element={
+                <RequireRole roles={["cliente"]}>
+                  <PanelCliente />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/panel/empleado"
+              element={
+                <RequireRole roles={["empleado"]}>
+                  <PanelEmpleado />
+                </RequireRole>
+              }
+            />
+            <Route
+              path="/panel/administrador"
+              element={
+                <RequireRole roles={["administrador"]}>
+                  <PanelAdministrador />
+                </RequireRole>
+              }
+            />
 
             {/* Páginas a pantalla completa, sin la estructura del sitio */}
             <Route path="/login" element={<Login />} />

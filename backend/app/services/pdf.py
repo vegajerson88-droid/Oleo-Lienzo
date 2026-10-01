@@ -1,4 +1,4 @@
-"""Generación de documentos PDF: facturas de venta y reporte diario.
+"""Generación de documentos PDF: facturas de venta y reportes de ventas.
 
 Se usa la API de bajo nivel de ReportLab (canvas) para controlar el diseño al
 milímetro: cabecera corporativa, datos fiscales, tabla con franjas alternas,
@@ -277,21 +277,25 @@ def generar_factura_pdf(factura) -> bytes:
     return buffer.getvalue()
 
 
-def generar_reporte_ventas_pdf(ventas: list, dia) -> bytes:
-    """Reporte diario de ventas en PDF, en horizontal para que quepan las columnas."""
+def generar_reporte_ventas_pdf(ventas: list, periodo) -> bytes:
+    """Reporte de ventas en PDF, en horizontal para que quepan las columnas.
+
+    `periodo` es un `app.core.periodos.Periodo`: aporta el título, la
+    descripción del rango y si cubre un solo día o varios.
+    """
     buffer = BytesIO()
     pagina_tam = landscape(A4)
     c = canvas.Canvas(buffer, pagesize=pagina_tam)
     ancho, alto = pagina_tam
-    fecha_texto = dia.strftime("%d/%m/%Y")
-    c.setTitle(f"Reporte de ventas {fecha_texto}")
+    fecha_texto = periodo.descripcion
+    c.setTitle(f"{periodo.titulo} · {fecha_texto}")
     c.setAuthor(settings.empresa_nombre)
 
-    y = _cabecera(c, ancho, alto, "Reporte diario de ventas")
+    y = _cabecera(c, ancho, alto, periodo.titulo)
 
     c.setFillColor(TINTA)
     c.setFont("Helvetica-Bold", 13)
-    c.drawString(16 * mm, y - 6 * mm, f"Ventas del {fecha_texto}")
+    c.drawString(16 * mm, y - 6 * mm, fecha_texto)
     c.setFont("Helvetica", 8)
     c.setFillColor(GRIS)
     generado = datetime.now().strftime("%d/%m/%Y %H:%M")
@@ -358,7 +362,7 @@ def generar_reporte_ventas_pdf(ventas: list, dia) -> bytes:
             _pie(c, ancho, pagina, f"Reporte de ventas {fecha_texto} · continúa")
             c.showPage()
             pagina += 1
-            fila = _cabecera(c, ancho, alto, "Reporte diario de ventas") - 12 * mm
+            fila = _cabecera(c, ancho, alto, periodo.titulo) - 12 * mm
 
         if indice % 2 == 0:
             c.setFillColor(FRANJA)
@@ -396,7 +400,7 @@ def generar_reporte_ventas_pdf(ventas: list, dia) -> bytes:
         c.drawString(cols["items"], fila - 3 * mm, "TOTAL DEL DÍA")
         c.drawRightString(cols["total"] - 2 * mm, fila - 3 * mm, formato_cop(total_general))
 
-    _pie(c, ancho, pagina, f"Reporte diario de ventas · {fecha_texto} · {settings.empresa_nombre}")
+    _pie(c, ancho, pagina, f"{periodo.titulo} · {fecha_texto} · {settings.empresa_nombre}")
     c.showPage()
     c.save()
     return buffer.getvalue()

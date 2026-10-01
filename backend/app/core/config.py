@@ -117,6 +117,13 @@ class Settings(BaseSettings):
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
     @property
+    def cors_origin_regex(self) -> str | None:
+        """Permite puertos dinámicos de Vite solo en loopback y desarrollo."""
+        if self.es_produccion:
+            return None
+        return r"^https?://(?:localhost|127\.0\.0\.1|\[::1\])(?::\d+)?$"
+
+    @property
     def iva_tasa(self) -> Decimal:
         """IVA como tasa decimal (19.0 -> 0.19)."""
         return Decimal(str(self.iva_porcentaje)) / Decimal("100")
